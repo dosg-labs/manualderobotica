@@ -1,0 +1,1595 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full bg-slate-50 text-slate-900">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Robótica</title>
+    
+    <!-- Google Analytics (GA4) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-0MYYV46RJX"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-0MYYV46RJX');
+    </script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fff5f5',
+                            100: '#fed7d7',
+                            200: '#feb2b2',
+                            300: '#fc8181',
+                            400: '#f56565',
+                            500: '#e53e3e', /* Vermelho Principal */
+                            600: '#dc2626',
+                            700: '#b91c1c',
+                            800: '#991b1b',
+                            900: '#7f1d1d',
+                            950: '#450a0a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Importmap para Firebase Modules -->
+    <script type="importmap">
+        {
+            "imports": {
+                "firebase/app": "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js",
+                "firebase/auth": "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js",
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"
+            }
+        }
+    </script>
+
+    <style>
+        /* Estilos de rolagem personalizados para tema claro */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 0, 0, 0.06);
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col font-sans selection:bg-brand-500 selection:text-white bg-slate-50 text-slate-800">
+
+    <!-- Notification Toast Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+    <!-- Navigation Header -->
+    <header class="sticky top-0 z-40 glass-panel border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <div class="flex items-center gap-3 cursor-pointer" onclick="navigateTo('home')">
+                    <div class="p-2 bg-gradient-to-tr from-brand-600 to-black rounded-xl shadow-lg shadow-brand-500/10">
+                        <i data-lucide="cpu" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <div>
+                        <span class="font-black text-lg bg-gradient-to-r from-black via-slate-800 to-brand-600 bg-clip-text text-transparent">
+                            Manual de Robótica
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Navigation Links -->
+                <nav class="hidden md:flex items-center gap-1">
+                    <button onclick="navigateTo('home')" class="nav-btn px-4 py-2 rounded-lg text-sm font-semibold transition-all hover:bg-slate-100" data-page="home">
+                        <span class="flex items-center gap-2"><i data-lucide="home" class="w-4 h-4"></i> Início</span>
+                    </button>
+                    <button onclick="navigateTo('glossary')" class="nav-btn px-4 py-2 rounded-lg text-sm font-semibold transition-all hover:bg-slate-100" data-page="glossary">
+                        <span class="flex items-center gap-2"><i data-lucide="book-open" class="w-4 h-4"></i> Glossário</span>
+                    </button>
+                    <button onclick="navigateTo('contact')" class="nav-btn px-4 py-2 rounded-lg text-sm font-semibold transition-all hover:bg-slate-100" data-page="contact">
+                        <span class="flex items-center gap-2"><i data-lucide="mail" class="w-4 h-4"></i> Contato</span>
+                    </button>
+                </nav>
+
+                <!-- Mobile menu button and admin indicators -->
+                <div class="flex items-center gap-3">
+                    <div id="admin-indicator" class="hidden items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-600 px-3 py-1 rounded-full text-xs font-semibold">
+                        <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
+                        Modo Admin
+                    </div>
+                    
+                    <button onclick="toggleMobileMenu()" class="md:hidden p-2 rounded-lg hover:bg-slate-100 text-slate-700">
+                        <i data-lucide="menu" id="menu-icon" class="w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden border-t border-slate-200 bg-white/95 px-4 pt-2 pb-4 space-y-1">
+            <button onclick="navigateTo('home'); toggleMobileMenu();" class="w-full text-left px-4 py-3 rounded-lg text-base font-semibold flex items-center gap-3 hover:bg-slate-50">
+                <i data-lucide="home" class="w-5 h-5 text-brand-600"></i> Início
+            </button>
+            <button onclick="navigateTo('glossary'); toggleMobileMenu();" class="w-full text-left px-4 py-3 rounded-lg text-base font-semibold flex items-center gap-3 hover:bg-slate-50">
+                <i data-lucide="book-open" class="w-5 h-5 text-brand-600"></i> Glossário
+            </button>
+            <button onclick="navigateTo('contact'); toggleMobileMenu();" class="w-full text-left px-4 py-3 rounded-lg text-base font-semibold flex items-center gap-3 hover:bg-slate-50">
+                <i data-lucide="mail" class="w-5 h-5 text-brand-600"></i> Contato
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- ========================================== -->
+        <!-- VIEW: HOME -->
+        <!-- ========================================== -->
+        <section id="view-home" class="view-section space-y-12">
+            <!-- Hero Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center pt-6">
+                <div class="lg:col-span-7 space-y-6 text-left">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-50 border border-brand-100 text-brand-600 text-xs font-semibold">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                        Aprenda Robótica de um jeito prático e claro
+                    </div>
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-none text-slate-900">
+                        Desvende o Universo da <span class="bg-gradient-to-r from-brand-600 to-black bg-clip-text text-transparent">Robótica</span>
+                    </h1>
+                    <p class="text-slate-600 text-lg max-w-xl">
+                        Explore termos técnicos, conceitos práticos de programação, eletrônica e automação mecânica de forma clara e interativa.
+                    </p>
+                    
+                    <!-- Hero Search -->
+                    <div class="relative max-w-lg">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i data-lucide="search" class="h-5 w-5 text-slate-400"></i>
+                        </div>
+                        <input type="text" id="hero-search-input" placeholder="O que você quer aprender hoje? (Ex: Sensor, Arduino...)" 
+                               class="block w-full pl-12 pr-4 py-4 bg-white border border-slate-300 rounded-2xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-slate-900 placeholder-slate-400 shadow-sm transition-all">
+                        <button onclick="handleHeroSearch()" class="absolute right-2 top-2 bottom-2 bg-slate-900 hover:bg-brand-600 text-white px-5 rounded-xl text-sm font-semibold transition-colors flex items-center gap-1">
+                            Buscar <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Graphic Hero Accent (Text removed as requested) -->
+                <div class="lg:col-span-5 flex justify-center">
+                    <div class="relative w-72 h-72 sm:w-80 sm:h-80 bg-gradient-to-br from-brand-50 to-slate-200 rounded-full flex items-center justify-center border border-slate-300 shadow-xl">
+                        <div class="absolute inset-4 bg-white rounded-full border border-slate-200 flex flex-col items-center justify-center p-6 text-center shadow-inner">
+                            <i data-lucide="bot" class="w-24 h-24 text-brand-600 animate-bounce"></i>
+                        </div>
+                        <!-- Floating Orbits -->
+                        <div class="absolute top-2 right-4 p-2 bg-white border border-slate-200 rounded-xl shadow-md">
+                            <i data-lucide="code" class="w-5 h-5 text-slate-900"></i>
+                        </div>
+                        <div class="absolute bottom-6 left-2 p-2 bg-white border border-slate-200 rounded-xl shadow-md">
+                            <i data-lucide="cable" class="w-5 h-5 text-brand-600"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Access / Categories -->
+            <div class="space-y-6 pt-6 border-t border-slate-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-2xl font-black tracking-tight text-slate-900">Principais Categorias</h2>
+                        <p class="text-sm text-slate-500 mt-0.5">Navegue pelas áreas fundamentais da robótica</p>
+                    </div>
+                    <button onclick="navigateTo('glossary')" class="text-brand-600 hover:text-brand-800 text-sm font-bold flex items-center gap-1 transition-colors">
+                        Ver tudo <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                
+                <div id="home-categories-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Dinamicamente gerado -->
+                </div>
+            </div>
+
+            <!-- Featured Terms Carousel/Grid -->
+            <div class="space-y-6 pb-12">
+                <div>
+                    <h2 class="text-2xl font-black tracking-tight text-slate-900">Destaques do Manual</h2>
+                    <p class="text-sm text-slate-500 mt-0.5">Conceitos fundamentais que todo roboticista precisa dominar</p>
+                </div>
+                <div id="home-featured-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Dinamicamente gerado -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW: GLOSSARY -->
+        <!-- ========================================== -->
+        <section id="view-glossary" class="view-section hidden space-y-8">
+            <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                    <h1 class="text-3xl font-black tracking-tight text-slate-900">O Glossário Completo</h1>
+                    <p class="text-slate-500 mt-1">Filtre, pesquise e estude dezenas de conceitos didáticos.</p>
+                </div>
+                
+                <!-- Live Search Bar -->
+                <div class="relative w-full md:max-w-xs">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i data-lucide="search" class="h-4 w-4 text-slate-400"></i>
+                    </div>
+                    <input type="text" id="glossary-search" oninput="filterGlossary()" placeholder="Pesquise por termo..." 
+                           class="block w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm text-slate-900 placeholder-slate-400">
+                </div>
+            </div>
+
+            <!-- Categories Tabs -->
+            <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none border-b border-slate-200" id="glossary-categories-tabs">
+                <!-- Dinamicamente gerado -->
+            </div>
+
+            <!-- Glossary Grid -->
+            <div id="glossary-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Dinamicamente gerado -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="glossary-empty-state" class="hidden text-center py-16 space-y-4">
+                <div class="inline-flex p-4 bg-slate-100 border border-slate-200 rounded-full text-slate-400">
+                    <i data-lucide="search-code" class="w-12 h-12"></i>
+                </div>
+                <h3 class="text-xl font-bold text-slate-800">Nenhum termo encontrado</h3>
+                <p class="text-slate-500 max-w-md mx-auto">Tente alterar os termos da sua pesquisa ou selecione outra categoria para explorar.</p>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW: ITEM DETAIL -->
+        <!-- ========================================== -->
+        <section id="view-item" class="view-section hidden max-w-4xl mx-auto space-y-8">
+            <button onclick="navigateTo('glossary')" class="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 text-sm font-semibold transition-colors">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> Voltar ao glossário
+            </button>
+
+            <article id="item-detail-content" class="glass-panel rounded-3xl p-6 sm:p-10 space-y-8 shadow-sm">
+                <!-- Dinamicamente gerado -->
+            </article>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW: CONTACT -->
+        <!-- ========================================== -->
+        <section id="view-contact" class="view-section hidden max-w-2xl mx-auto space-y-8">
+            <div class="text-center space-y-2">
+                <h1 class="text-3xl font-black tracking-tight text-slate-900">Tem alguma dúvida ou sugestão?</h1>
+                <p class="text-slate-500">Quer sugerir um termo novo para o manual ou reportar um erro? Envie sua mensagem.</p>
+            </div>
+
+            <div class="glass-panel rounded-3xl p-6 sm:p-8 shadow-md">
+                <form id="contact-form" onsubmit="handleContactSubmit(event)" class="space-y-5">
+                    <div>
+                        <label for="contact-name" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Seu Nome</label>
+                        <input type="text" id="contact-name" required class="block w-full px-4 py-3 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-slate-900 placeholder-slate-400">
+                    </div>
+                    
+                    <div>
+                        <label for="contact-email" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Seu E-mail</label>
+                        <input type="email" id="contact-email" required class="block w-full px-4 py-3 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-slate-900 placeholder-slate-400">
+                    </div>
+
+                    <div>
+                        <label for="contact-subject" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Assunto</label>
+                        <select id="contact-subject" required class="block w-full px-4 py-3 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-slate-900">
+                            <option value="sugestao">Sugerir novo termo</option>
+                            <option value="duvida">Dúvida sobre conteúdo</option>
+                            <option value="bug">Reportar erro na página</option>
+                            <option value="parceria">Parceria/Outros</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="contact-message" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Sua Mensagem</label>
+                        <textarea id="contact-message" rows="5" required class="block w-full px-4 py-3 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-slate-900 placeholder-slate-400" placeholder="Escreva aqui detalhes da sua sugestão ou dúvida..."></textarea>
+                    </div>
+
+                    <button type="submit" class="w-full py-4 bg-slate-950 hover:bg-brand-600 text-white font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
+                        <i data-lucide="send" class="w-4 h-4"></i> Enviar Mensagem
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW: PRIVACY POLICY -->
+        <!-- ========================================== -->
+        <section id="view-privacy" class="view-section hidden max-w-3xl mx-auto space-y-8">
+            <div class="text-left space-y-4">
+                <h1 class="text-4xl font-black tracking-tight text-slate-900">Política de Privacidade</h1>
+                <p class="text-slate-500 text-sm">Última atualização: Junho de 2026</p>
+                <div class="border-b border-slate-200 pb-2"></div>
+            </div>
+
+            <div class="glass-panel rounded-3xl p-6 sm:p-10 space-y-6 text-slate-700 leading-relaxed shadow-sm">
+                <p class="font-semibold text-slate-900">Esta política explica como o Manual de Robótica lida com os dados coletados na plataforma de aprendizado cooperativo de robótica.</p>
+                
+                <h2 class="text-xl font-bold text-slate-900 mt-6">1. Coleta de Informações</h2>
+                <p>Nós valorizamos a privacidade dos nossos usuários. Coletamos apenas informações fornecidas ativamente, como nome e e-mail em formulários de contato ou relatórios de sugestões enviados voluntariamente.</p>
+
+                <h2 class="text-xl font-bold text-slate-900 mt-6">2. Cookies e Rastreamento</h2>
+                <p>Utilizamos serviços padrões do setor, como o Google Analytics, para obter métricas anonimizadas de audiência com o intuito de melhorar a experiência e relevância didática de nosso material.</p>
+
+                <h2 class="text-xl font-bold text-slate-900 mt-6">3. Armazenamento Local e Cloud</h2>
+                <p>As modificações feitas por administradores autorizados ou contribuições aprovadas são armazenadas em banco de dados seguro do Firebase. Preferências de interface e estados locais do seu navegador são mantidos no LocalStorage do próprio dispositivo.</p>
+
+                <h2 class="text-xl font-bold text-slate-900 mt-6">4. Atualizações desta Política</h2>
+                <p>Reservamo-nos o direito de alterar esta política de privacidade a qualquer momento. Mudanças substanciais serão comunicadas diretamente em nossa página principal.</p>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW: TERMS OF USE -->
+        <!-- ========================================== -->
+        <section id="view-terms" class="view-section hidden max-w-3xl mx-auto space-y-8">
+            <div class="text-left space-y-4">
+                <h1 class="text-4xl font-black tracking-tight text-slate-900">Termos de Uso</h1>
+                <p class="text-slate-500 text-sm">Última atualização: Junho de 2026</p>
+                <div class="border-b border-slate-200 pb-2"></div>
+            </div>
+
+            <div class="glass-panel rounded-3xl p-6 sm:p-10 space-y-6 text-slate-700 leading-relaxed shadow-sm">
+                <p class="font-semibold text-slate-900">Ao acessar o Manual de Robótica, você concorda em cumprir e estar vinculado aos termos de serviço apresentados abaixo.</p>
+
+                <h2 class="text-xl font-bold text-slate-900 mt-6">1. Licença de Conteúdo</h2>
+                <p>Todo o conteúdo deste glossário de robótica (definições, diagramas conceituais e exemplos práticos de código) é voltado para uso acadêmico e livre distribuição. Você pode utilizar o código para fins escolares, acadêmicos ou comerciais de prototipagem.</p>
+
+                <h2 class="text-xl font-bold text-slate-900 mt-6">2. Uso Responsável do Editor Colaborativo</h2>
+                <p>Os usuários que possuírem acesso administrativo comprometem-se a publicar apenas conceitos tecnicamente corretos, sem termos ofensivos, sem plágio integral e garantindo a clareza e objetivos educacionais do portal.</p>
+
+                <h2 class="text-xl font-bold text-slate-900 mt-6">3. Isenção de Responsabilidade</h2>
+                <p>Os exemplos de códigos e esquemas de circuitos são fornecidos "como estão". Não nos responsabilizamos por eventuais danos em componentes de hardware decorrentes de ligações ou práticas errôneas aplicadas pelos estudantes.</p>
+
+                <h2 class="text-xl font-bold text-slate-900 mt-6">4. Modificações e Suspensão</h2>
+                <p>Podemos descontinuar, alterar ou suspender qualquer aspecto ou categoria deste repositório sem aviso prévio para manutenções e auditorias de qualidade.</p>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW: ADMIN PANEL -->
+        <!-- ========================================== -->
+        <section id="view-admin" class="view-section hidden space-y-8">
+            <!-- Unauthenticated State -->
+            <div id="admin-auth-panel" class="max-w-md mx-auto space-y-6">
+                <div class="text-center space-y-2">
+                    <div class="inline-flex p-3 bg-brand-50 border border-brand-100 rounded-2xl text-brand-600 mb-2">
+                        <i data-lucide="lock" class="w-8 h-8"></i>
+                    </div>
+                    <h1 class="text-2xl font-black tracking-tight text-slate-900">Área do Administrador</h1>
+                    <p class="text-slate-500 text-sm">Entre com seu e-mail e senha para gerenciar termos e categorias.</p>
+                </div>
+
+                <div class="glass-panel rounded-3xl p-6 space-y-4 shadow-md">
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">E-mail</label>
+                            <input type="email" id="admin-email" class="block w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Senha</label>
+                            <input type="password" id="admin-password" class="block w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 text-sm">
+                        </div>
+                    </div>
+                    <button onclick="handleAdminLogin()" class="w-full py-2.5 bg-slate-950 hover:bg-brand-600 text-white text-sm font-bold rounded-xl shadow transition-colors flex items-center justify-center gap-1.5">
+                        <i data-lucide="log-in" class="w-4 h-4"></i> Entrar como Admin
+                    </button>
+                    <!-- "Editor Local (Sem Banco)" removido completamente -->
+                </div>
+            </div>
+
+            <!-- Authenticated Panel -->
+            <div id="admin-dashboard" class="hidden space-y-10">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200">
+                    <div>
+                        <h1 class="text-3xl font-black tracking-tight text-slate-900">Painel Administrativo</h1>
+                        <p class="text-slate-500 text-sm">Crie, edite ou exclua qualquer conteúdo do Glossário.</p>
+                    </div>
+                    <button onclick="handleAdminLogout()" class="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 self-start">
+                        <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Sair do Panel
+                    </button>
+                </div>
+
+                <!-- Tabs Admin (Termos / Categorias) -->
+                <div class="flex gap-4 border-b border-slate-200 pb-2">
+                    <button onclick="switchAdminTab('terms')" id="admin-tab-terms" class="admin-tab-btn border-b-2 border-brand-500 text-slate-950 pb-2 font-bold text-sm">
+                        Gerenciar Termos
+                    </button>
+                    <button onclick="switchAdminTab('categories')" id="admin-tab-categories" class="admin-tab-btn border-b-2 border-transparent text-slate-500 hover:text-slate-950 pb-2 font-semibold text-sm">
+                        Gerenciar Categorias
+                    </button>
+                </div>
+
+                <!-- ADMIN SECTION: TERMS -->
+                <div id="admin-section-terms" class="space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-100 p-4 rounded-2xl border border-slate-200">
+                        <span class="text-sm text-slate-600">Total de termos no sistema: <strong class="text-slate-950" id="admin-total-terms">0</strong></span>
+                        <button onclick="openTermFormModal()" class="px-4 py-2.5 bg-slate-950 hover:bg-brand-600 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Novo Termo
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="border-b border-slate-200 bg-slate-50 text-slate-600 uppercase text-xs font-bold tracking-wider">
+                                    <th class="py-4 px-6">Termo</th>
+                                    <th class="py-4 px-6">Categoria</th>
+                                    <th class="py-4 px-6">Descrição Curta</th>
+                                    <th class="py-4 px-6 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-terms-table" class="divide-y divide-slate-100">
+                                <!-- Dinamicamente gerado -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ADMIN SECTION: CATEGORIES -->
+                <div id="admin-section-categories" class="hidden space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-100 p-4 rounded-2xl border border-slate-200">
+                        <span class="text-sm text-slate-600">Total de categorias no sistema: <strong class="text-slate-950" id="admin-total-categories">0</strong></span>
+                        <button onclick="openCategoryFormModal()" class="px-4 py-2.5 bg-slate-950 hover:bg-brand-600 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
+                            <i data-lucide="plus" class="w-4 h-4"></i> Nova Categoria
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="admin-categories-list">
+                        <!-- Dinamicamente gerado -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Global Modal: CONFIRMATION -->
+    <div id="confirm-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+        <div class="glass-panel max-w-sm w-full rounded-2xl p-6 space-y-6 shadow-xl animate-in fade-in zoom-in-95 duration-150">
+            <div class="flex items-center gap-3 text-brand-600">
+                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                <h3 class="font-black text-lg text-slate-900" id="confirm-title">Confirmar ação</h3>
+            </div>
+            <p class="text-sm text-slate-600" id="confirm-message">Você tem certeza que deseja realizar esta ação?</p>
+            <div class="flex items-center justify-end gap-3">
+                <button onclick="closeConfirmModal(false)" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg">Cancelar</button>
+                <button onclick="closeConfirmModal(true)" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-lg" id="confirm-btn-ok">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Modal: TERM FORM -->
+    <div id="term-form-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+        <div class="glass-panel max-w-2xl w-full rounded-3xl p-6 sm:p-8 space-y-6 my-8 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-4">
+                <h3 class="font-black text-xl text-slate-900" id="term-modal-title">Novo Termo</h3>
+                <button onclick="closeTermFormModal()" class="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-800"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            
+            <form id="term-form" onsubmit="handleTermSubmit(event)" class="space-y-4">
+                <input type="hidden" id="form-term-id">
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nome do Termo</label>
+                        <input type="text" id="form-term-nome" required class="block w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Categoria</label>
+                        <select id="form-term-categoria" required class="block w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 text-sm">
+                            <!-- Dinamicamente gerado -->
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Descrição Curta (Exibida nos cards)</label>
+                    <input type="text" id="form-term-descricao-curta" required maxlength="120" class="block w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 text-sm" placeholder="Resumo simples do termo...">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Descrição Longa (Explicação detalhada / Markdown básico suportado)</label>
+                    <textarea id="form-term-descricao-longa" rows="6" required class="block w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 text-sm" placeholder="Explicação rica, exemplos de uso prático..."></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Código de Exemplo (Opcional)</label>
+                        <textarea id="form-term-exemplo-codigo" rows="4" class="font-mono block w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-950 text-xs" placeholder="// Ex: void setup() {}"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Links / Referências (Opcional)</label>
+                        <textarea id="form-term-links" rows="4" class="block w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 text-sm" placeholder="https://exemplo.com - Artigo complementar"></textarea>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+                    <button type="button" onclick="closeTermFormModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl">Cancelar</button>
+                    <button type="submit" class="px-5 py-2.5 bg-slate-950 hover:bg-brand-600 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-lg">
+                        <i data-lucide="save" class="w-4 h-4"></i> Salvar Termo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Global Modal: CATEGORY FORM -->
+    <div id="category-form-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+        <div class="glass-panel max-w-md w-full rounded-2xl p-6 space-y-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-4">
+                <h3 class="font-black text-lg text-slate-900" id="category-modal-title">Nova Categoria</h3>
+                <button onclick="closeCategoryFormModal()" class="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-800"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            
+            <form id="category-form" onsubmit="handleCategorySubmit(event)" class="space-y-4">
+                <input type="hidden" id="form-cat-id">
+                
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nome da Categoria</label>
+                    <input type="text" id="form-cat-nome" required class="block w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 text-sm" placeholder="Ex: Programação">
+                </div>
+
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="col-span-1">
+                        <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Emoji / Ícone</label>
+                        <input type="text" id="form-cat-emoji" required class="block w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 text-sm text-center" placeholder="🤖">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Cor Base</label>
+                        <select id="form-cat-color" class="block w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 text-sm">
+                            <option value="brand">Vermelho</option>
+                            <option value="emerald">Verde</option>
+                            <option value="amber">Amarelo</option>
+                            <option value="purple">Roxo</option>
+                            <option value="rose">Rosa</option>
+                            <option value="orange">Laranja</option>
+                            <option value="blue">Azul</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Descrição Curta</label>
+                    <input type="text" id="form-cat-desc" required class="block w-full px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 text-sm" placeholder="Ex: Algoritmos e lógica aplicados a placas de controle">
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+                    <button type="button" onclick="closeCategoryFormModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl">Cancelar</button>
+                    <button type="submit" class="px-5 py-2.5 bg-slate-950 hover:bg-brand-600 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-lg">
+                        <i data-lucide="save" class="w-4 h-4"></i> Salvar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer Area -->
+    <footer class="mt-auto border-t border-slate-200 bg-white py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-left">
+            <div>
+                <p class="text-sm text-slate-600">© 2026 Manual de Robótica. Projeto de Aprendizado Colaborativo.</p>
+                <p class="text-xs text-slate-400 mt-1">Desenvolvido com finalidades acadêmicas e de livre compartilhamento de conhecimento.</p>
+            </div>
+            <div class="flex items-center gap-4 text-slate-500">
+                <button onclick="navigateTo('privacy')" class="hover:text-brand-600 transition-colors text-sm font-semibold">Privacidade</button>
+                <span class="text-slate-300">•</span>
+                <button onclick="navigateTo('terms')" class="hover:text-brand-600 transition-colors text-sm font-semibold">Termos de Uso</button>
+                <span class="text-slate-300">•</span>
+                <button onclick="navigateTo('admin')" class="hover:text-brand-600 transition-colors text-sm font-extrabold flex items-center gap-1"><i data-lucide="settings" class="w-4 h-4 text-slate-800"></i> Admin</button>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Firebase Script Logic and Application State -->
+    <script type="module">
+        import { initializeApp } from "firebase/app";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, signOut } from "firebase/auth";
+        import { getFirestore, doc, setDoc, getDoc, collection, query, onSnapshot, addDoc, updateDoc, deleteDoc } from "firebase/firestore";
+
+        // APP STATE (In-Memory Fallback if Firebase Config isn't provided)
+        const state = {
+            currentPage: 'home',
+            isAdmin: false,
+            user: null,
+            activeCategory: 'all',
+            terms: [],
+            categorias: [],
+            isFirebaseActive: false
+        };
+
+        // MOCK INITIAL DATA FOR SMOOTH OFFLINE FALLBACK
+        const DEFAULT_CATEGORIES = [
+            { id: 'cat-eletronica', nome: 'Eletrônica', emoji: '🔌', color: 'emerald', desc: 'Componentes elétricos, diagramas e circuitos' },
+            { id: 'cat-programacao', nome: 'Programação', emoji: '💻', color: 'brand', desc: 'Códigos, IDE Arduino e lógica de controle' },
+            { id: 'cat-mecanica', nome: 'Mecânica', emoji: '⚙️', color: 'amber', desc: 'Engrenagens, motores e estrutura física dos robôs' },
+            { id: 'cat-sensores', nome: 'Sensores', emoji: '👁️', color: 'purple', desc: 'Componentes de aquisição de dados e percepção' }
+        ];
+
+        const DEFAULT_TERMS = [
+            {
+                id: 'term-arduino',
+                nome: 'Arduino',
+                categoria: 'cat-programacao',
+                descricaoCurta: 'Plataforma de prototipagem eletrônica de código aberto e hardware livre.',
+                descricaoLonga: 'O Arduino é uma placa microcontroladora extremamente versátil utilizada no mundo inteiro para a criação de robôs, automação residencial e instalações de arte interativas. Ela pode ler entradas físicas (como luz em um sensor ou um clique em um botão) e transformá-las em saídas (como acender um LED ou acionar um motor). A facilidade de aprendizado da sua linguagem, baseada em C/C++, faz dela o ponto de entrada favorito para estudantes de robótica.',
+                exemploCodigo: '// Piscar um LED no Arduino\nvoid setup() {\n  pinMode(13, OUTPUT); // Define o pino do LED como saída\n}\n\nvoid loop() {\n  digitalWrite(13, HIGH); // Liga o LED\n  delay(1000);            // Espera 1 segundo\n  digitalWrite(13, LOW);  // Desliga o LED\n  delay(1000);            // Espera 1 segundo\n}',
+                links: 'https://www.arduino.cc - Site Oficial do Arduino'
+            },
+            {
+                id: 'term-servomotor',
+                nome: 'Servomotor',
+                categoria: 'cat-mecanica',
+                descricaoCurta: 'Atuador rotativo ou atuador linear que permite controle preciso de posição angular ou linear.',
+                descricaoLonga: 'Diferente de um motor DC comum que apenas gira livremente, o Servomotor possui um sensor de feedback de posição acoplado (geralmente um potenciômetro). Isso permite enviar comandos para que ele gire exatamente até uma determinada angulação (como 90 graus ou 180 graus). São perfeitos para garras mecânicas, juntas de braços robóticos e sistemas de direção.',
+                exemploCodigo: '#include <Servo.h>\n\nServo meuServo;\n\nvoid setup() {\n  meuServo.attach(9); // Conecta o servo ao pino 9\n}\n\nvoid loop() {\n  meuServo.write(90);  // Move o servo para a posição de 90 graus\n  delay(1000);\n  meuServo.write(180); // Move o servo para 180 graus\n  delay(1000);\n}',
+                links: 'https://pt.wikipedia.org/wiki/Servomotor'
+            },
+            {
+                id: 'term-sensor-ultrassonico',
+                nome: 'Sensor Ultrassônico',
+                categoria: 'cat-sensores',
+                descricaoCurta: 'Sensor capaz de medir distâncias emitindo ondas sonoras de alta frequência.',
+                descricaoLonga: 'O sensor ultrassônico funciona enviando um pulso sonoro de alta frequência (ultrassom) e cronometrando o tempo que esse som leva para ecoar de volta após colidir com um objeto. Com base na velocidade do som, o sensor calcula com incrível exatidão a distância em centímetros entre o robô e qualquer obstáculo no caminho.',
+                exemploCodigo: '// Medindo distância com o sensor HC-SR04\nconst int trigPin = 9;\nconst int echoPin = 10;\nlong duracao;\nint distancia;\n\nvoid setup() {\n  pinMode(trigPin, OUTPUT);\n  pinMode(echoPin, INPUT);\n  Serial.begin(9600);\n}',
+                links: 'https://en.wikipedia.org/wiki/Ultrasonic_sensor'
+            }
+        ];
+
+        // DYNAMIC COLOR MAP HELPER (Avoids dynamic Tailwind string concatenation compiling issues)
+        function getCategoryColorMap(color) {
+            const colors = {
+                brand: {
+                    border: 'border-red-500',
+                    borderLight: 'border-red-200 hover:border-red-400',
+                    text: 'text-red-600',
+                    bg: 'bg-red-50',
+                    badge: 'bg-red-50 text-red-600 border-red-200',
+                    btnActive: 'bg-red-600 text-white border-red-500 shadow-md'
+                },
+                emerald: {
+                    border: 'border-emerald-500',
+                    borderLight: 'border-emerald-200 hover:border-emerald-400',
+                    text: 'text-emerald-600',
+                    bg: 'bg-emerald-50',
+                    badge: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+                    btnActive: 'bg-emerald-600 text-white border-emerald-500 shadow-md'
+                },
+                amber: {
+                    border: 'border-amber-500',
+                    borderLight: 'border-amber-200 hover:border-amber-400',
+                    text: 'text-amber-600',
+                    bg: 'bg-amber-50',
+                    badge: 'bg-amber-50 text-amber-600 border-amber-200',
+                    btnActive: 'bg-amber-600 text-white border-amber-500 shadow-md'
+                },
+                purple: {
+                    border: 'border-purple-500',
+                    borderLight: 'border-purple-200 hover:border-purple-400',
+                    text: 'text-purple-600',
+                    bg: 'bg-purple-50',
+                    badge: 'bg-purple-50 text-purple-600 border-purple-200',
+                    btnActive: 'bg-purple-600 text-white border-purple-500 shadow-md'
+                },
+                rose: {
+                    border: 'border-rose-500',
+                    borderLight: 'border-rose-200 hover:border-rose-400',
+                    text: 'text-rose-600',
+                    bg: 'bg-rose-50',
+                    badge: 'bg-rose-50 text-rose-600 border-rose-200',
+                    btnActive: 'bg-rose-600 text-white border-rose-500 shadow-md'
+                },
+                orange: {
+                    border: 'border-orange-500',
+                    borderLight: 'border-orange-200 hover:border-orange-400',
+                    text: 'text-orange-600',
+                    bg: 'bg-orange-50',
+                    badge: 'bg-orange-50 text-orange-600 border-orange-200',
+                    btnActive: 'bg-orange-600 text-white border-orange-500 shadow-md'
+                },
+                blue: {
+                    border: 'border-blue-500',
+                    borderLight: 'border-blue-200 hover:border-blue-400',
+                    text: 'text-blue-600',
+                    bg: 'bg-blue-50',
+                    badge: 'bg-blue-50 text-blue-600 border-blue-200',
+                    btnActive: 'bg-blue-600 text-white border-blue-500 shadow-md'
+                }
+            };
+            return colors[color] || colors.brand;
+        }
+
+        // LOAD FROM LOCAL STORAGE OR FALLBACK ON INITIALIZATION
+        function getLocalStorageData(key, fallback) {
+            const stored = localStorage.getItem(key);
+            return stored ? JSON.parse(stored) : fallback;
+        }
+
+        function saveLocalStorageData(key, value) {
+            localStorage.setItem(key, JSON.stringify(value));
+        }
+
+        state.categorias = getLocalStorageData('robotica_categorias', DEFAULT_CATEGORIES);
+        state.terms = getLocalStorageData('robotica_terms', DEFAULT_TERMS);
+
+        // ==========================================
+        // FIREBASE SETUP (FOLLOWING STRICT PERMISSION RULES)
+        // ==========================================
+        let db = null;
+        let auth = null;
+        let appId = typeof __app_id !== 'undefined' ? __app_id : 'manual-robotica-production';
+
+        const initFirebase = async () => {
+            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                try {
+                    const firebaseConfig = JSON.parse(__firebase_config);
+                    const app = initializeApp(firebaseConfig);
+                    auth = getAuth(app);
+                    db = getFirestore(app);
+                    state.isFirebaseActive = true;
+
+                    // Auth first (RULE 3)
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+
+                    // On Auth state change listener
+                    onAuthStateChanged(auth, (user) => {
+                        state.user = user;
+                        if (user) {
+                            state.isAdmin = localStorage.getItem('isAdminSession') === 'true';
+                        } else {
+                            state.isAdmin = false;
+                        }
+                        updateAdminUI();
+                    });
+
+                    // Set up Realtime Sync with Firestore (Rule 1 & Rule 2 compliant)
+                    setupFirestoreSync();
+
+                } catch (err) {
+                    console.error("Erro na inicialização do Firebase:", err);
+                    showToast("Rodando em modo Offline local. Algumas alterações serão salvas temporariamente.", "warning");
+                    state.isFirebaseActive = false;
+                }
+            } else {
+                console.log("Configurações do Firebase não encontradas. Rodando no modo LocalStorage.");
+            }
+        };
+
+        // Firestore Sync with Simple Queries (Rule 2: Fetch all, filter locally)
+        function setupFirestoreSync() {
+            if (!db) return;
+
+            // Sync Categorias
+            const catRef = collection(db, 'artifacts', appId, 'public', 'data', 'categorias');
+            onSnapshot(catRef, (snapshot) => {
+                const cats = [];
+                snapshot.forEach(doc => {
+                    cats.push({ id: doc.id, ...doc.data() });
+                });
+                if (cats.length > 0) {
+                    state.categorias = cats;
+                    saveLocalStorageData('robotica_categorias', cats);
+                    renderViews();
+                }
+            }, (error) => {
+                console.error("Erro ao sincronizar categorias:", error);
+            });
+
+            // Sync Termos
+            const termRef = collection(db, 'artifacts', appId, 'public', 'data', 'termos');
+            onSnapshot(termRef, (snapshot) => {
+                const terms = [];
+                snapshot.forEach(doc => {
+                    terms.push({ id: doc.id, ...doc.data() });
+                });
+                if (terms.length > 0) {
+                    state.terms = terms;
+                    saveLocalStorageData('robotica_terms', terms);
+                    renderViews();
+                }
+            }, (error) => {
+                console.error("Erro ao sincronizar termos:", error);
+            });
+        }
+
+        // ==========================================
+        // NOTIFICATIONS (TOASTS) INSTEAD OF BROWSER ALERTS
+        // ==========================================
+        window.showToast = (message, type = 'info') => {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = `p-4 rounded-xl shadow-xl border flex items-center gap-3 transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto`;
+            
+            let bgClass = 'bg-white border-slate-200 text-slate-800';
+            let icon = 'info';
+
+            if (type === 'success') {
+                bgClass = 'bg-emerald-50 border-emerald-300 text-emerald-800';
+                icon = 'check-circle';
+            } else if (type === 'error') {
+                bgClass = 'bg-rose-50 border-rose-300 text-rose-800';
+                icon = 'x-circle';
+            } else if (type === 'warning') {
+                bgClass = 'bg-amber-50 border-amber-300 text-amber-800';
+                icon = 'alert-circle';
+            }
+
+            toast.className += ` ${bgClass}`;
+            toast.innerHTML = `
+                <i data-lucide="${icon}" class="w-5 h-5 flex-shrink-0"></i>
+                <p class="text-sm font-semibold">${message}</p>
+            `;
+
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            // Animate In
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            // Auto dismiss
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        };
+
+        // ==========================================
+        // ROUTING & MENU NAVIGATION
+        // ==========================================
+        window.navigateTo = (page, paramId = null) => {
+            state.currentPage = page;
+
+            // Hide all sections
+            document.querySelectorAll('.view-section').forEach(section => {
+                section.classList.add('hidden');
+            });
+
+            // Show current page
+            const activeSection = document.getElementById(`view-${page}`);
+            if (activeSection) {
+                activeSection.classList.remove('hidden');
+            }
+
+            // Update Navbar Active Link Indicators
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                const targetPage = btn.getAttribute('data-page');
+                if (targetPage === page) {
+                    btn.classList.add('bg-slate-900', 'text-white');
+                    btn.classList.remove('text-slate-700', 'hover:bg-slate-100');
+                } else {
+                    btn.classList.remove('bg-slate-900', 'text-white');
+                    btn.classList.add('text-slate-700', 'hover:bg-slate-100');
+                }
+            });
+
+            // Render view-specific data
+            if (page === 'home') {
+                renderHome();
+            } else if (page === 'glossary') {
+                renderGlossary();
+            } else if (page === 'item' && paramId) {
+                renderItemDetail(paramId);
+            } else if (page === 'admin') {
+                renderAdmin();
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        window.toggleMobileMenu = () => {
+            const menu = document.getElementById('mobile-menu');
+            const isHidden = menu.classList.contains('hidden');
+            if (isHidden) {
+                menu.classList.remove('hidden');
+            } else {
+                menu.classList.add('hidden');
+            }
+        };
+
+        // ==========================================
+        // BUSINESS LOGIC: HOME VIEW
+        // ==========================================
+        function renderHome() {
+            // Render Hero categories with color identities
+            const homeCategoriesGrid = document.getElementById('home-categories-grid');
+            if (homeCategoriesGrid) {
+                homeCategoriesGrid.innerHTML = state.categorias.map(cat => {
+                    const count = state.terms.filter(t => t.categoria === cat.id).length;
+                    const cMap = getCategoryColorMap(cat.color);
+                    return `
+                        <div onclick="filterByCategoryAndGo('${cat.id}')" class="group cursor-pointer bg-white border ${cMap.borderLight} p-5 rounded-2xl hover:shadow-md transition-all duration-300">
+                            <div class="text-3xl mb-3 group-hover:scale-110 transition-transform duration-300 select-none">${cat.emoji || '🤖'}</div>
+                            <h3 class="font-black text-slate-900 group-hover:${cMap.text} transition-colors">${cat.nome}</h3>
+                            <p class="text-xs text-slate-500 mt-1 line-clamp-2">${cat.desc || ''}</p>
+                            <span class="inline-block text-[10px] uppercase font-bold ${cMap.text} ${cMap.bg} border ${cMap.borderLight} px-2.5 py-0.5 rounded-full mt-3">${count} ${count === 1 ? 'termo' : 'termos'}</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Render Featured terms with distinct color categorization
+            const homeFeaturedGrid = document.getElementById('home-featured-grid');
+            if (homeFeaturedGrid) {
+                const featured = state.terms.slice(0, 3);
+                homeFeaturedGrid.innerHTML = featured.map(term => {
+                    const cat = state.categorias.find(c => c.id === term.categoria) || { nome: 'Outros', color: 'brand' };
+                    const cMap = getCategoryColorMap(cat.color);
+                    return `
+                        <div onclick="navigateTo('item', '${term.id}')" class="cursor-pointer bg-white border ${cMap.borderLight} p-6 rounded-2xl hover:shadow-lg transition-all duration-300 flex flex-col justify-between hover:-translate-y-1">
+                            <div class="space-y-3">
+                                <span class="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-0.5 rounded-full ${cMap.badge} border">
+                                    ${cat.emoji || ''} ${cat.nome}
+                                </span>
+                                <h3 class="font-black text-lg text-slate-900">${term.nome}</h3>
+                                <p class="text-sm text-slate-500 line-clamp-3">${term.descricaoCurta}</p>
+                            </div>
+                            <span class="${cMap.text} text-xs font-bold flex items-center gap-1 mt-4 group">
+                                Ler artigo completo <i data-lucide="arrow-up-right" class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform"></i>
+                            </span>
+                        </div>
+                    `;
+                }).join('');
+                lucide.createIcons();
+            }
+        }
+
+        window.filterByCategoryAndGo = (catId) => {
+            state.activeCategory = catId;
+            navigateTo('glossary');
+        };
+
+        window.handleHeroSearch = () => {
+            const val = document.getElementById('hero-search-input').value.trim();
+            if (val) {
+                document.getElementById('glossary-search').value = val;
+                state.activeCategory = 'all';
+                navigateTo('glossary');
+                filterGlossary();
+            }
+        };
+
+        // ==========================================
+        // BUSINESS LOGIC: GLOSSARY VIEW
+        // ==========================================
+        function renderGlossary() {
+            // Render category selector tabs
+            const tabsContainer = document.getElementById('glossary-categories-tabs');
+            if (tabsContainer) {
+                const allCount = state.terms.length;
+                let tabsHtml = `
+                    <button onclick="setGlossaryCategory('all')" class="flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold border transition-all ${
+                        state.activeCategory === 'all' 
+                        ? 'bg-slate-900 border-slate-800 text-white shadow-md' 
+                        : 'border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-400 bg-white'
+                    }">Todos (${allCount})</button>
+                `;
+
+                tabsHtml += state.categorias.map(cat => {
+                    const count = state.terms.filter(t => t.categoria === cat.id).length;
+                    const isActive = state.activeCategory === cat.id;
+                    const cMap = getCategoryColorMap(cat.color);
+                    return `
+                        <button onclick="setGlossaryCategory('${cat.id}')" class="flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold border transition-all ${
+                            isActive 
+                            ? cMap.btnActive 
+                            : 'border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-400 bg-white'
+                        }">${cat.emoji || ''} ${cat.nome} (${count})</button>
+                    `;
+                }).join('');
+
+                tabsContainer.innerHTML = tabsHtml;
+            }
+
+            filterGlossary();
+        }
+
+        window.setGlossaryCategory = (catId) => {
+            state.activeCategory = catId;
+            renderGlossary();
+        };
+
+        window.filterGlossary = () => {
+            const queryVal = document.getElementById('glossary-search').value.toLowerCase().trim();
+            const filtered = state.terms.filter(term => {
+                const matchesCategory = state.activeCategory === 'all' || term.categoria === state.activeCategory;
+                const matchesSearch = term.nome.toLowerCase().includes(queryVal) || 
+                                      term.descricaoCurta.toLowerCase().includes(queryVal) ||
+                                      term.descricaoLonga.toLowerCase().includes(queryVal);
+                return matchesCategory && matchesSearch;
+            });
+
+            const grid = document.getElementById('glossary-grid');
+            const emptyState = document.getElementById('glossary-empty-state');
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                grid.innerHTML = filtered.map(term => {
+                    const cat = state.categorias.find(c => c.id === term.categoria) || { nome: 'Outros', color: 'brand' };
+                    const cMap = getCategoryColorMap(cat.color);
+                    return `
+                        <div onclick="navigateTo('item', '${term.id}')" class="cursor-pointer bg-white border ${cMap.borderLight} p-6 rounded-2xl hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+                            <div class="space-y-3">
+                                <span class="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full ${cMap.badge}">
+                                    ${cat.emoji || '🤖'} ${cat.nome}
+                                </span>
+                                <h3 class="font-black text-lg text-slate-900 group-hover:${cMap.text} transition-colors">${term.nome}</h3>
+                                <p class="text-xs text-slate-500 line-clamp-3 leading-relaxed">${term.descricaoCurta}</p>
+                            </div>
+                            <div class="flex items-center justify-between mt-6 pt-4 border-t border-slate-100">
+                                <span class="text-[10px] font-medium text-slate-400">ID: ${term.id.substring(5, 12)}</span>
+                                <span class="text-xs font-bold ${cMap.text} flex items-center gap-0.5">Explorar <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i></span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                lucide.createIcons();
+            }
+        };
+
+        // ==========================================
+        // BUSINESS LOGIC: ITEM DETAIL VIEW
+        // ==========================================
+        function renderItemDetail(id) {
+            const term = state.terms.find(t => t.id === id);
+            const container = document.getElementById('item-detail-content');
+
+            if (!term) {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <h3 class="text-xl font-bold">Termo não encontrado</h3>
+                        <p class="text-slate-500 mt-2">O conceito que você busca não existe ou foi removido.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const cat = state.categorias.find(c => c.id === term.categoria) || { nome: 'Outros', color: 'brand' };
+            const cMap = getCategoryColorMap(cat.color);
+
+            container.innerHTML = `
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200">
+                    <div class="space-y-2">
+                        <span class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full ${cMap.badge} border">
+                            ${cat.emoji || ''} ${cat.nome}
+                        </span>
+                        <h1 class="text-3xl sm:text-4xl font-black text-slate-900">${term.nome}</h1>
+                    </div>
+                    
+                    <button onclick="copyToClipboard('${window.location.origin}/#${term.id}')" class="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-bold border border-slate-300 transition-colors flex items-center gap-1.5 self-start shadow-sm">
+                        <i data-lucide="share-2" class="w-4 h-4 ${cMap.text}"></i> Copiar Link
+                    </button>
+                </div>
+
+                <!-- Explanation content -->
+                <div class="space-y-6">
+                    <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-400">Sobre o conceito</h3>
+                    <p class="text-slate-700 leading-relaxed text-base whitespace-pre-line">${term.descricaoLonga}</p>
+                </div>
+
+                <!-- Optional code implementation -->
+                ${term.exemploCodigo ? `
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400">Exemplo Prático de Código</h3>
+                            <button onclick="copyCodeBlock(\`code-block-${term.id}\`)" class="text-xs ${cMap.text} hover:opacity-85 font-bold flex items-center gap-1 transition-colors">
+                                <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar Código
+                            </button>
+                        </div>
+                        <div class="relative rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 p-5">
+                            <pre class="font-mono text-xs text-slate-100 overflow-x-auto" id="code-block-${term.id}"><code>${escapeHtml(term.exemploCodigo)}</code></pre>
+                        </div>
+                    </div>
+                ` : ''}
+
+                <!-- Optional References -->
+                ${term.links ? `
+                    <div class="pt-6 border-t border-slate-200 space-y-3">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5"><i data-lucide="link" class="w-4 h-4 ${cMap.text}"></i> Referências adicionais</h3>
+                        <ul class="space-y-2">
+                            ${term.links.split('\n').map(link => {
+                                const parts = link.split(' - ');
+                                const url = parts[0];
+                                const label = parts[1] || url;
+                                return `
+                                    <li>
+                                        <a href="${url}" target="_blank" rel="noopener noreferrer" class="${cMap.text} hover:opacity-85 text-sm font-bold hover:underline inline-flex items-center gap-1">
+                                            ${label} <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                                        </a>
+                                    </li>
+                                `;
+                            }).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+            `;
+            lucide.createIcons();
+        }
+
+        // Helpers
+        function escapeHtml(text) {
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        window.copyToClipboard = (text) => {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast("Link copiado para a área de transferência!", "success");
+            } catch (err) {
+                showToast("Não foi possível copiar o link.", "error");
+            }
+            document.body.removeChild(textarea);
+        };
+
+        window.copyCodeBlock = (id) => {
+            const pre = document.getElementById(id);
+            if (pre) {
+                copyToClipboard(pre.innerText);
+            }
+        };
+
+        // ==========================================
+        // BUSINESS LOGIC: CONTACT VIEW
+        // ==========================================
+        window.handleContactSubmit = (e) => {
+            e.preventDefault();
+            const name = document.getElementById('contact-name').value;
+            const email = document.getElementById('contact-email').value;
+            const subject = document.getElementById('contact-subject').value;
+            const msg = document.getElementById('contact-message').value;
+
+            const data = { name, email, subject, msg, date: new Date().toISOString() };
+            const contacts = getLocalStorageData('contact_messages', []);
+            contacts.push(data);
+            saveLocalStorageData('contact_messages', contacts);
+
+            showToast("Mensagem enviada com sucesso! Agradecemos sua colaboração.", "success");
+            document.getElementById('contact-form').reset();
+            navigateTo('home');
+        };
+
+        // ==========================================
+        // BUSINESS LOGIC: ADMIN PANEL
+        // ==========================================
+        window.handleAdminLogin = () => {
+            const email = document.getElementById('admin-email').value.trim();
+            const pass = document.getElementById('admin-password').value;
+
+            if (email === 'admin@robomanual.com' && pass === '123456') {
+                state.isAdmin = true;
+                localStorage.setItem('isAdminSession', 'true');
+                showToast("Login administrativo realizado com sucesso!", "success");
+                renderAdmin();
+            } else {
+                showToast("E-mail ou senha incorretos para administrador.", "error");
+            }
+        };
+
+        window.handleAdminLogout = () => {
+            state.isAdmin = false;
+            localStorage.removeItem('isAdminSession');
+            showToast("Você saiu da área administrativa.", "info");
+            navigateTo('home');
+        };
+
+        function updateAdminUI() {
+            const indicator = document.getElementById('admin-indicator');
+            if (indicator) {
+                if (state.isAdmin) {
+                    indicator.classList.remove('hidden');
+                    indicator.classList.add('flex');
+                } else {
+                    indicator.classList.remove('flex');
+                    indicator.classList.add('hidden');
+                }
+            }
+        }
+
+        window.switchAdminTab = (tab) => {
+            const tabTerms = document.getElementById('admin-tab-terms');
+            const tabCats = document.getElementById('admin-tab-categories');
+            const secTerms = document.getElementById('admin-section-terms');
+            const secCats = document.getElementById('admin-section-categories');
+
+            if (tab === 'terms') {
+                tabTerms.className = "admin-tab-btn border-b-2 border-brand-500 text-slate-950 pb-2 font-bold text-sm";
+                tabCats.className = "admin-tab-btn border-b-2 border-transparent text-slate-400 hover:text-slate-950 pb-2 font-semibold text-sm";
+                secTerms.classList.remove('hidden');
+                secCats.classList.add('hidden');
+            } else {
+                tabCats.className = "admin-tab-btn border-b-2 border-brand-500 text-slate-950 pb-2 font-bold text-sm";
+                tabTerms.className = "admin-tab-btn border-b-2 border-transparent text-slate-400 hover:text-slate-950 pb-2 font-semibold text-sm";
+                secCats.classList.remove('hidden');
+                secTerms.classList.add('hidden');
+            }
+        };
+
+        function renderAdmin() {
+            updateAdminUI();
+            
+            const authPanel = document.getElementById('admin-auth-panel');
+            const dashboard = document.getElementById('admin-dashboard');
+
+            if (!state.isAdmin) {
+                authPanel.classList.remove('hidden');
+                dashboard.classList.add('hidden');
+                return;
+            }
+
+            authPanel.classList.add('hidden');
+            dashboard.classList.remove('hidden');
+
+            // Render Terms table
+            const tableBody = document.getElementById('admin-terms-table');
+            const totalTermsCount = document.getElementById('admin-total-terms');
+            if (tableBody) {
+                totalTermsCount.innerText = state.terms.length;
+                tableBody.innerHTML = state.terms.map(term => {
+                    const cat = state.categorias.find(c => c.id === term.categoria) || { nome: 'Sem categoria', emoji: '⚙️' };
+                    return `
+                        <tr class="hover:bg-slate-50">
+                            <td class="py-4 px-6 font-bold text-slate-900">${term.nome}</td>
+                            <td class="py-4 px-6 text-slate-600">${cat.emoji || ''} ${cat.nome}</td>
+                            <td class="py-4 px-6 text-slate-500 max-w-xs truncate">${term.descricaoCurta}</td>
+                            <td class="py-4 px-6 text-right space-x-2">
+                                <button onclick="openTermFormModal('${term.id}')" class="text-slate-400 hover:text-brand-600 p-1 transition-colors"><i data-lucide="edit" class="w-4 h-4 inline"></i></button>
+                                <button onclick="confirmDeleteTerm('${term.id}')" class="text-slate-400 hover:text-rose-600 p-1 transition-colors"><i data-lucide="trash-2" class="w-4 h-4 inline"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            // Render Categories Grid
+            const catList = document.getElementById('admin-categories-list');
+            const totalCategoriesCount = document.getElementById('admin-total-categories');
+            if (catList) {
+                totalCategoriesCount.innerText = state.categorias.length;
+                catList.innerHTML = state.categorias.map(cat => {
+                    const termsCount = state.terms.filter(t => t.categoria === cat.id).length;
+                    const cMap = getCategoryColorMap(cat.color);
+                    return `
+                        <div class="glass-panel p-4 rounded-xl flex items-center justify-between border ${cMap.borderLight}">
+                            <div class="flex items-center gap-3">
+                                <span class="text-3xl">${cat.emoji || '⚙️'}</span>
+                                <div>
+                                    <h4 class="font-bold text-slate-900">${cat.nome}</h4>
+                                    <p class="text-xs text-slate-500">${termsCount} termos associados</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <button onclick="openCategoryFormModal('${cat.id}')" class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:${cMap.text} transition-all"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                                <button onclick="confirmDeleteCategory('${cat.id}')" class="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-rose-600 transition-all"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // MODALS & FORMS HANDLERS
+        // ==========================================
+        let currentConfirmCallback = null;
+
+        window.openConfirmModal = (title, message, callback) => {
+            document.getElementById('confirm-title').innerText = title;
+            document.getElementById('confirm-message').innerText = message;
+            currentConfirmCallback = callback;
+            document.getElementById('confirm-modal').classList.remove('hidden');
+        };
+
+        window.closeConfirmModal = (confirmed) => {
+            document.getElementById('confirm-modal').classList.add('hidden');
+            if (currentConfirmCallback) {
+                currentConfirmCallback(confirmed);
+                currentConfirmCallback = null;
+            }
+        };
+
+        // Term Form
+        window.openTermFormModal = (id = null) => {
+            const form = document.getElementById('term-form');
+            form.reset();
+            
+            const selectCat = document.getElementById('form-term-categoria');
+            selectCat.innerHTML = state.categorias.map(c => `<option value="${c.id}">${c.emoji || ''} ${c.nome}</option>`).join('');
+
+            if (id) {
+                const term = state.terms.find(t => t.id === id);
+                if (term) {
+                    document.getElementById('term-modal-title').innerText = 'Editar Termo';
+                    document.getElementById('form-term-id').value = term.id;
+                    document.getElementById('form-term-nome').value = term.nome;
+                    document.getElementById('form-term-categoria').value = term.categoria;
+                    document.getElementById('form-term-descricao-curta').value = term.descricaoCurta;
+                    document.getElementById('form-term-descricao-longa').value = term.descricaoLonga;
+                    document.getElementById('form-term-exemplo-codigo').value = term.exemploCodigo || '';
+                    document.getElementById('form-term-links').value = term.links || '';
+                }
+            } else {
+                document.getElementById('term-modal-title').innerText = 'Criar Novo Termo';
+                document.getElementById('form-term-id').value = '';
+            }
+
+            document.getElementById('term-form-modal').classList.remove('hidden');
+        };
+
+        window.closeTermFormModal = () => {
+            document.getElementById('term-form-modal').classList.add('hidden');
+        };
+
+        window.handleTermSubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('form-term-id').value;
+            const nome = document.getElementById('form-term-nome').value;
+            const categoria = document.getElementById('form-term-categoria').value;
+            const descricaoCurta = document.getElementById('form-term-descricao-curta').value;
+            const descricaoLonga = document.getElementById('form-term-descricao-longa').value;
+            const exemploCodigo = document.getElementById('form-term-exemplo-codigo').value;
+            const links = document.getElementById('form-term-links').value;
+
+            const termData = { nome, categoria, descricaoCurta, descricaoLonga, exemploCodigo, links };
+
+            if (id) {
+                if (db && state.isFirebaseActive) {
+                    try {
+                        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'termos', id);
+                        await updateDoc(docRef, termData);
+                        showToast("Termo atualizado no banco!", "success");
+                    } catch (err) {
+                        console.error(err);
+                        showToast("Erro de rede, salvo localmente.", "warning");
+                        updateLocalTerm(id, termData);
+                    }
+                } else {
+                    updateLocalTerm(id, termData);
+                }
+            } else {
+                const newId = 'term-' + Date.now();
+                if (db && state.isFirebaseActive) {
+                    try {
+                        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'termos', newId);
+                        await setDoc(docRef, termData);
+                        showToast("Novo termo publicado com sucesso!", "success");
+                    } catch (err) {
+                        console.error(err);
+                        showToast("Erro de rede, criado localmente.", "warning");
+                        createLocalTerm({ id: newId, ...termData });
+                    }
+                } else {
+                    createLocalTerm({ id: newId, ...termData });
+                }
+            }
+
+            closeTermFormModal();
+            renderAdmin();
+            renderViews();
+        };
+
+        function updateLocalTerm(id, updatedData) {
+            state.terms = state.terms.map(t => t.id === id ? { ...t, ...updatedData } : t);
+            saveLocalStorageData('robotica_terms', state.terms);
+            showToast("Termo atualizado localmente!", "success");
+        }
+
+        function createLocalTerm(newTerm) {
+            state.terms.push(newTerm);
+            saveLocalStorageData('robotica_terms', state.terms);
+            showToast("Termo criado com sucesso!", "success");
+        }
+
+        window.confirmDeleteTerm = (id) => {
+            const term = state.terms.find(t => t.id === id);
+            if (!term) return;
+
+            openConfirmModal(
+                "Deseja excluir o termo?", 
+                `Essa ação apagará permanentemente o termo "${term.nome}" de seu repositório local e da nuvem.`, 
+                async (confirmed) => {
+                    if (confirmed) {
+                        if (db && state.isFirebaseActive) {
+                            try {
+                                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'termos', id));
+                                showToast("Termo excluído do banco!", "success");
+                            } catch (err) {
+                                console.error(err);
+                                showToast("Erro ao excluir. Removido localmente.", "warning");
+                                deleteLocalTerm(id);
+                            }
+                        } else {
+                            deleteLocalTerm(id);
+                        }
+                        renderAdmin();
+                        renderViews();
+                    }
+                }
+            );
+        };
+
+        function deleteLocalTerm(id) {
+            state.terms = state.terms.filter(t => t.id !== id);
+            saveLocalStorageData('robotica_terms', state.terms);
+            showToast("Termo excluído!", "success");
+        }
+
+        // Category Form
+        window.openCategoryFormModal = (id = null) => {
+            const form = document.getElementById('category-form');
+            form.reset();
+
+            if (id) {
+                const cat = state.categorias.find(c => c.id === id);
+                if (cat) {
+                    document.getElementById('category-modal-title').innerText = 'Editar Categoria';
+                    document.getElementById('form-cat-id').value = cat.id;
+                    document.getElementById('form-cat-nome').value = cat.nome;
+                    document.getElementById('form-cat-emoji').value = cat.emoji || '';
+                    document.getElementById('form-cat-color').value = cat.color || 'brand';
+                    document.getElementById('form-cat-desc').value = cat.desc || '';
+                }
+            } else {
+                document.getElementById('category-modal-title').innerText = 'Nova Categoria';
+                document.getElementById('form-cat-id').value = '';
+            }
+
+            document.getElementById('category-form-modal').classList.remove('hidden');
+        };
+
+        window.closeCategoryFormModal = () => {
+            document.getElementById('category-form-modal').classList.add('hidden');
+        };
+
+        window.handleCategorySubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('form-cat-id').value;
+            const nome = document.getElementById('form-cat-nome').value;
+            const emoji = document.getElementById('form-cat-emoji').value;
+            const color = document.getElementById('form-cat-color').value;
+            const desc = document.getElementById('form-cat-desc').value;
+
+            const catData = { nome, emoji, color, desc };
+
+            if (id) {
+                if (db && state.isFirebaseActive) {
+                    try {
+                        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'categorias', id);
+                        await updateDoc(docRef, catData);
+                        showToast("Categoria atualizada no banco!", "success");
+                    } catch (err) {
+                        console.error(err);
+                        showToast("Erro de rede. Salvo temporariamente.", "warning");
+                        updateLocalCategory(id, catData);
+                    }
+                } else {
+                    updateLocalCategory(id, catData);
+                }
+            } else {
+                const newId = 'cat-' + Date.now();
+                if (db && state.isFirebaseActive) {
+                    try {
+                        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'categorias', newId);
+                        await setDoc(docRef, catData);
+                        showToast("Categoria adicionada ao banco!", "success");
+                    } catch (err) {
+                        console.error(err);
+                        showToast("Erro de rede. Salvo temporariamente.", "warning");
+                        createLocalCategory({ id: newId, ...catData });
+                    }
+                } else {
+                    createLocalCategory({ id: newId, ...catData });
+                }
+            }
+
+            closeCategoryFormModal();
+            renderAdmin();
+            renderViews();
+        };
+
+        function updateLocalCategory(id, updatedData) {
+            state.categorias = state.categorias.map(c => c.id === id ? { ...c, ...updatedData } : c);
+            saveLocalStorageData('robotica_categorias', state.categorias);
+            showToast("Categoria updated localmente!", "success");
+        }
+
+        function createLocalCategory(newCat) {
+            state.categorias.push(newCat);
+            saveLocalStorageData('robotica_categorias', state.categorias);
+            showToast("Categoria criada!", "success");
+        }
+
+        window.confirmDeleteCategory = (id) => {
+            const cat = state.categorias.find(c => c.id === id);
+            if (!cat) return;
+
+            openConfirmModal(
+                "Deseja excluir a categoria?", 
+                `Tem certeza de que deseja remover a categoria "${cat.nome}"? Os termos que a utilizam precisarão de uma nova atribuição de categoria.`, 
+                async (confirmed) => {
+                    if (confirmed) {
+                        if (db && state.isFirebaseActive) {
+                            try {
+                                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'categorias', id));
+                                showToast("Categoria excluída do banco!", "success");
+                            } catch (err) {
+                                console.error(err);
+                                showToast("Erro ao excluir. Removido localmente.", "warning");
+                                deleteLocalCategory(id);
+                            }
+                        } else {
+                            deleteLocalCategory(id);
+                        }
+                        renderAdmin();
+                        renderViews();
+                    }
+                }
+            );
+        };
+
+        function deleteLocalCategory(id) {
+            state.categorias = state.categorias.filter(c => c.id !== id);
+            saveLocalStorageData('robotica_categorias', state.categorias);
+            showToast("Categoria excluída!", "success");
+        }
+
+        function renderViews() {
+            if (state.currentPage === 'home') renderHome();
+            else if (state.currentPage === 'glossary') renderGlossary();
+        }
+
+        // ==========================================
+        // INITIALIZATION
+        // ==========================================
+        async function appInit() {
+            state.isAdmin = localStorage.getItem('isAdminSession') === 'true';
+            updateAdminUI();
+
+            await initFirebase();
+            
+            navigateTo('home');
+            lucide.createIcons();
+        }
+
+        appInit();
+
+    </script>
+</body>
+</html>
