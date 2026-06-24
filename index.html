@@ -131,7 +131,7 @@
                 Equipe de Robótica - Secretaria de Estado da Educação de São Paulo - 2026
             </p>
             <p class="text-xs mt-2 opacity-60">
-                Este trabalho está licensed sob uma Licença Creative Commons Atribuição-NãoComercial-CompartilhaIgual 4.0 Internacional.
+                Este trabalho está licenciado sob uma Licença Creative Commons Atribuição-NãoComercial-CompartilhaIgual 4.0 Internacional.
             </p>
         </div>
     </footer>
@@ -193,7 +193,7 @@
             signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut
         } from 'firebase/auth';
         import { 
-            getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc
+            getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, increment, getDoc
         } from 'firebase/firestore';
 
         // ==========================================
@@ -207,6 +207,7 @@
             verbetes: [],
             feedbacks: [], 
             contatos: [], // Fale Conosco
+            acessos: 0, // Contador de Acessos Real
             searchQuery: '',
             selectedCategoryFilter: 'all',
             selectedItem: null,
@@ -244,7 +245,7 @@
         try {
             parsedConfig = JSON.parse(rawConfig);
         } catch (e) {
-            console.warn("Configuração do Firebase Canvas ausente.");
+            console.warn("Configuração do Firebase inválida ou ausente.");
         }
 
         const finalFirebaseConfig = (parsedConfig && parsedConfig.apiKey) ? parsedConfig : productionConfig;
@@ -369,21 +370,6 @@
             const featuredItem = state.verbetes.length > 0 ? state.verbetes[Math.floor(Math.random() * state.verbetes.length)] : null;
             const latestItems = [...state.verbetes].sort((a,b) => (b.dataCriacao || '').localeCompare(a.dataCriacao || '')).slice(0, 3);
 
-            let adminWidget = `
-                <button onclick="window.handleAdminClick()" class="flex flex-col items-center text-slate-400 hover:text-red-600 transition-colors w-full h-full justify-center">
-                    <i data-lucide="shield" class="w-8 h-8 mb-2"></i>
-                    <span class="text-xs font-bold uppercase">Área Admin</span>
-                </button>
-            `;
-            if (state.isAdmin) {
-                adminWidget = `
-                    <div class="flex flex-col items-center text-green-500 w-full h-full justify-center">
-                        <i data-lucide="shield-check" class="w-8 h-8 mb-2"></i>
-                        <span class="text-xs font-bold uppercase">Painel Ativo</span>
-                    </div>
-                `;
-            }
-
             container.innerHTML = `
                 <div class="bg-white rounded-3xl p-8 sm:p-12 shadow-sm border-2 border-slate-100 mb-12 flex flex-col md:flex-row items-center justify-between relative overflow-hidden">
                     <div class="absolute top-0 right-0 w-64 h-64 bg-red-50 rounded-full blur-3xl -mr-20 -mt-20 z-0"></div>
@@ -400,22 +386,23 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-12">
-                    <!-- CARD SOLICITADO: Verbetes cadastrados e crescendo -->
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-slate-200 text-center flex flex-col justify-center items-center col-span-1 sm:col-span-2 md:col-span-2">
-                        <div class="text-4xl mb-2">🚀</div>
-                        <div class="text-lg font-extrabold text-slate-800">Estamos com <span class="text-red-600 text-2xl font-black">${state.verbetes.length}</span> verbetes cadastrados e crescendo!</div>
-                        <div class="text-xs font-bold text-slate-400 uppercase tracking-wide mt-1">Manual de Robótica Educacional</div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border-b-4 border-slate-200 text-center flex flex-col justify-center items-center hover:-translate-y-1 transition-transform">
+                        <div class="text-5xl mb-3">🚀</div>
+                        <div class="text-4xl font-black text-slate-800 mb-1">${state.verbetes.length}</div>
+                        <div class="text-sm font-bold text-slate-400 uppercase tracking-wide">Verbetes (e crescendo)</div>
                     </div>
                     
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-slate-200 text-center flex flex-col justify-center items-center">
-                        <div class="text-4xl mb-2">🏷️</div>
-                        <div class="text-3xl font-extrabold text-slate-800">${state.categorias.length}</div>
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border-b-4 border-slate-200 text-center flex flex-col justify-center items-center hover:-translate-y-1 transition-transform">
+                        <div class="text-5xl mb-3">🏷️</div>
+                        <div class="text-4xl font-black text-slate-800 mb-1">${state.categorias.length}</div>
                         <div class="text-sm font-bold text-slate-400 uppercase tracking-wide">Categorias</div>
                     </div>
                     
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border-b-4 border-slate-200 text-center flex flex-col justify-center items-center">
-                        ${adminWidget}
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border-b-4 border-slate-200 text-center flex flex-col justify-center items-center hover:-translate-y-1 transition-transform">
+                        <div class="text-5xl mb-3">📈</div>
+                        <div class="text-4xl font-black text-slate-800 mb-1">${state.acessos.toLocaleString('pt-BR')}</div>
+                        <div class="text-sm font-bold text-slate-400 uppercase tracking-wide">Acessos</div>
                     </div>
                 </div>
 
@@ -751,7 +738,6 @@
 
                 mainContent = `
                     <div class="p-4">
-                        <!-- BANNER ATUALIZADO: TÍTULO EM CAIXA ALTA E TEXTO OBSOLETO REMOVIDO -->
                         <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-8 rounded-r-xl flex items-start">
                             <i data-lucide="info" class="w-6 h-6 text-blue-500 mr-3 mt-1 flex-shrink-0"></i>
                             <div>
@@ -1082,6 +1068,7 @@
             if (!db) return;
             const catRef = collection(db, 'artifacts', appId, 'public', 'data', 'categorias');
             const verbRef = collection(db, 'artifacts', appId, 'public', 'data', 'verbetes');
+            const statRef = doc(db, 'artifacts', appId, 'public', 'data', 'estatisticas', 'geral');
 
             // Categorias e Verbetes são públicos e carregam sem autenticação restrita
             onSnapshot(catRef, (snapshot) => {
@@ -1101,10 +1088,19 @@
                 console.error("Erro verbetes:", err);
                 fallbackToOfflineMode("Verbetes");
             });
+
+            // Escuta o contador real de acessos persistentes
+            onSnapshot(statRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    state.acessos = docSnap.data().acessos || 0;
+                    if (state.view === 'home') renderView();
+                }
+            }, (err) => {
+                console.warn("Erro ao ler estatisticas:", err);
+            });
         }
 
         // GERENCIADOR DE OUVINTES ADMINISTRATIVOS EM TEMPO REAL
-        // Se conecta apenas quando o Admin acessa e é bloqueado de forma limpa pelo Firestore se não for autorizado
         function setupAdminListeners() {
             if (!db || !state.user || state.user.isAnonymous) return;
             
@@ -1152,6 +1148,26 @@
             window.customAlert("Acesso Recusado", "Sua conta do Google não possui permissões administrativas nas regras de segurança do Firebase.", true);
         }
 
+        // Incrementa visitação real persistente na nuvem (Fica somado "para sempre")
+        async function registerRealVisit() {
+            if (!db) return;
+            // Impede múltiplos incrementos desnecessários apenas na mesma aba aberta atual (f5 simples)
+            if (!sessionStorage.getItem('visited_robotica_v3')) {
+                sessionStorage.setItem('visited_robotica_v3', 'true');
+                const statRef = doc(db, 'artifacts', appId, 'public', 'data', 'estatisticas', 'geral');
+                try {
+                    const snap = await getDoc(statRef);
+                    if (!snap.exists()) {
+                        await setDoc(statRef, { acessos: 1 });
+                    } else {
+                        await updateDoc(statRef, { acessos: increment(1) });
+                    }
+                } catch(e) {
+                    console.warn("Não foi possível incrementar o contador de acessos:", e);
+                }
+            }
+        }
+
         // Função de escape: Se houver falha de permissão no Firestore, muda para simulação offline
         function fallbackToOfflineMode(sourceName) {
             const spinner = document.getElementById('loading-view');
@@ -1194,6 +1210,8 @@
                 for (const verb of defaultVerbetes) {
                     await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'verbetes', verb.id), verb);
                 }
+                // Criação do contador inicial se não existir
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'estatisticas', 'geral'), { acessos: 1 });
             } catch (e) { console.error("Erro no Seed:", e); }
         }
 
@@ -1252,12 +1270,14 @@
                     state.user = currentUser;
                     
                     if (currentUser && !currentUser.isAnonymous) {
-                        // Ativa de forma assíncrona a tentativa de ler dados restritos para verificar privilégios
                         setupAdminListeners();
                     } else {
                         state.isAdmin = false;
                         adminUnsubscribers.forEach(unsub => unsub());
                         adminUnsubscribers = [];
+                        
+                        // Assim que autentica como anônimo na entrada do site, conta a visita!
+                        registerRealVisit();
                     }
                     
                     updateNavbar();
@@ -1306,13 +1326,11 @@
             if(item) window.navigateTo('item', item);
         };
 
-        // Gerenciador inteligente de cliques na engrenagem administrativa
         window.handleAdminClick = () => {
             if (state.user && !state.user.isAnonymous) {
                 if (state.isAdmin) {
                     window.navigateTo('admin');
                 } else {
-                    // Tenta forçar a escuta para o caso de nova verificação de privilégio
                     setupAdminListeners();
                     window.navigateTo('admin');
                 }
