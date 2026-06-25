@@ -64,8 +64,8 @@
             body { background-color: white !important; color: black !important; }
             nav, footer, .no-print, #nav-links { display: none !important; }
             main { padding: 0 !important; }
-            .view-container { box-shadow: none !important; border: none !important; padding: 0 !important; margin: 0 !important; }
-            .print-break-inside-avoid { break-inside: avoid; }
+            .view-container { shadow: none !important; border: none !important; padding: 0 !important; margin: 0 !important; }
+            .print-break-inside-avoid { display: block; page-break-inside: avoid; }
         }
     </style>
 </head>
@@ -1406,16 +1406,29 @@
         async function initApp() {
             if (auth) {
                 try {
+                    // Tenta o login silencioso inicial (Se não houver token customizado, loga anônimo)
                     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                         await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
+                    } else if (!auth.currentUser) {
                         await signInAnonymously(auth);
                     }
                 } catch (err) {
-                    console.error("Erro de Autenticação Silenciosa:", err);
+                    console.error("Erro de Autenticação Inicial:", err);
                 }
 
-                onAuthStateChanged(auth, (currentUser) => {
+                onAuthStateChanged(auth, async (currentUser) => {
+                    // CORREÇÃO CRÍTICA DO LOOP NULO:
+                    // Se o usuário foi deslogado (ou rejeitado pela porta administrativa),
+                    // re-autentica de forma anônima imediatamente para restaurar o acesso público ao site!
+                    if (!currentUser) {
+                        try {
+                            await signInAnonymously(auth);
+                        } catch (err) {
+                            console.error("Erro ao restabelecer conexão anônima:", err);
+                        }
+                        return;
+                    }
+
                     state.user = currentUser;
                     
                     if (currentUser && !currentUser.isAnonymous) {
@@ -1425,7 +1438,9 @@
                             setupAdminListeners();
                         } else {
                             state.isAdmin = false;
-                            signOut(auth);
+                            // Desloga o intruso do Firebase Auth. Isso vai disparar o onAuthStateChanged
+                            // novamente como nulo (null), onde nossa regra acima de re-autenticação anônima vai atuar!
+                            await signOut(auth);
                             window.customAlert("Acesso Negado", "Seu e-mail não possui privilégios de administrador.", true);
                             window.navigateTo('home');
                         }
