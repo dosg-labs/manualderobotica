@@ -579,38 +579,55 @@
             const cat = state.categorias.find(c => c.nome === item.categoria) || { cor: '#cbd5e1', emoji: '📄' };
             const isVideo = item.imagemOuVideo && (item.imagemOuVideo.includes('youtube.com') || item.imagemOuVideo.includes('youtu.be'));
 
+            // --- Montagem unificada do sistema de mídias perfeitamente alinhadas ---
             let mediaHTML = '';
-            if (item.imagemOuVideo) {
-                if (isVideo) {
-                    const embedUrl = window.getEmbedUrl(item.imagemOuVideo);
-                    mediaHTML = `
-                        <div class="w-full aspect-video rounded-2xl overflow-hidden mt-6 mb-4 bg-black flex flex-col items-center justify-center relative shadow-lg print-break-inside-avoid">
-                            <iframe class="w-full h-full" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                        </div>
-                    `;
-                } else {
-                    mediaHTML = `<img src="${item.imagemOuVideo}" alt="${item.nome}" class="w-full rounded-2xl mt-6 mb-4 shadow-lg object-contain max-h-[500px] print-break-inside-avoid cursor-pointer hover:opacity-90 transition" onclick="window.openLightbox('${item.imagemOuVideo}', false)" title="Clique para ampliar" />`;
-                }
-            }
-
-            // --- Mídias Secundárias (Thumbnail Inline) ---
-            const secMedia = [item.midia2, item.midia3, item.midia4].filter(Boolean);
-            if (secMedia.length > 0) {
-                mediaHTML += `<div class="flex gap-4 overflow-x-auto pb-4 mb-4 custom-scrollbar print-break-inside-avoid">`;
-                secMedia.forEach(m => {
-                    const isVid = m.includes('youtube') || m.includes('youtu.be');
-                    if (isVid) {
-                        const embedUrl = window.getEmbedUrl(m);
-                        const thumbUrl = `https://img.youtube.com/vi/${window.getYoutubeId(m)}/0.jpg`;
+            if (item.imagemOuVideo || item.midia2 || item.midia3 || item.midia4) {
+                mediaHTML = `<div class="w-full mt-6 mb-8 print-break-inside-avoid">`;
+                
+                // Mídia Principal (Ocupa a largura total do contêiner)
+                if (item.imagemOuVideo) {
+                    if (isVideo) {
+                        const embedUrl = window.getEmbedUrl(item.imagemOuVideo);
                         mediaHTML += `
-                            <div class="w-32 h-24 sm:w-40 sm:h-28 flex-shrink-0 bg-slate-900 rounded-xl flex items-center justify-center cursor-pointer hover:opacity-80 transition relative shadow-sm border-2 border-slate-200" onclick="window.openLightbox('${embedUrl}', true)" title="Assistir Vídeo">
-                                <i data-lucide="play-circle" class="text-white w-10 h-10 absolute z-10 drop-shadow-md"></i>
-                                <img src="${thumbUrl}" class="w-full h-full object-cover rounded-lg opacity-60" onerror="this.style.display='none'"/>
-                            </div>`;
+                            <div class="w-full aspect-video rounded-3xl overflow-hidden bg-black flex flex-col items-center justify-center relative shadow-md mb-4 border border-slate-100">
+                                <iframe class="w-full h-full" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                            </div>
+                        `;
                     } else {
-                        mediaHTML += `<img src="${m}" class="w-32 h-24 sm:w-40 sm:h-28 flex-shrink-0 object-cover rounded-xl shadow-sm border-2 border-slate-200 cursor-pointer hover:opacity-80 transition" onclick="window.openLightbox('${m}', false)" title="Clique para ampliar" />`;
+                        mediaHTML += `
+                            <div class="w-full overflow-hidden rounded-3xl bg-slate-50 border border-slate-100 shadow-md mb-4 flex justify-center items-center">
+                                <img src="${item.imagemOuVideo}" alt="${item.nome}" class="w-full h-auto max-h-[500px] object-cover cursor-pointer hover:scale-[1.01] transition duration-300" onclick="window.openLightbox('${item.imagemOuVideo}', false)" title="Clique para ampliar" />
+                            </div>
+                        `;
                     }
-                });
+                }
+
+                // Mídias Secundárias (Ficam na grade inferior ajustadas milimetricamente com as bordas de cima)
+                const secMedia = [item.midia2, item.midia3, item.midia4].filter(Boolean);
+                if (secMedia.length > 0) {
+                    // Divide dinamicamente o espaço com base em quantos itens secundários existem
+                    const gridCols = secMedia.length === 1 ? 'grid-cols-1' : (secMedia.length === 2 ? 'grid-cols-2' : 'grid-cols-3');
+                    mediaHTML += `<div class="grid ${gridCols} gap-4 w-full">`;
+                    
+                    secMedia.forEach(m => {
+                        const isVid = m.includes('youtube') || m.includes('youtu.be');
+                        if (isVid) {
+                            const embedUrl = window.getEmbedUrl(m);
+                            const thumbUrl = `https://img.youtube.com/vi/${window.getYoutubeId(m)}/0.jpg`;
+                            mediaHTML += `
+                                <div class="aspect-video w-full bg-slate-900 rounded-2xl flex items-center justify-center cursor-pointer hover:opacity-90 hover:scale-[1.02] transition duration-300 relative shadow-sm border-2 border-slate-100 overflow-hidden" onclick="window.openLightbox('${embedUrl}', true)" title="Assistir Vídeo">
+                                    <i data-lucide="play-circle" class="text-white w-10 h-10 absolute z-10 drop-shadow-lg"></i>
+                                    <img src="${thumbUrl}" class="w-full h-full object-cover opacity-70" onerror="this.style.display='none'"/>
+                                </div>`;
+                        } else {
+                            mediaHTML += `
+                                <div class="aspect-video w-full rounded-2xl bg-slate-50 border-2 border-slate-100 overflow-hidden shadow-sm hover:opacity-90 hover:scale-[1.02] transition duration-300 cursor-pointer" onclick="window.openLightbox('${m}', false)" title="Clique para ampliar">
+                                    <img src="${m}" class="w-full h-full object-cover" />
+                                </div>`;
+                        }
+                    });
+                    mediaHTML += `</div>`;
+                }
                 mediaHTML += `</div>`;
             }
 
@@ -1236,7 +1253,7 @@
             adminUnsubscribers = [];
 
             const feedRef = collection(db, 'artifacts', appId, 'public', 'data', 'feedbacks');
-            const contRef = collection(db, 'artifacts', appId, 'public', 'data', 'contatos');
+            const mtContRef = collection(db, 'artifacts', appId, 'public', 'data', 'contatos');
 
             try {
                 const unsubFeed = onSnapshot(feedRef, (snapshot) => {
@@ -1256,7 +1273,7 @@
                     handleAdminPermissionDenied();
                 });
 
-                const unsubCont = onSnapshot(contRef, (snapshot) => {
+                const unsubCont = onSnapshot(mtContRef, (snapshot) => {
                     state.contatos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     renderView();
                 }, (err) => {
@@ -1278,7 +1295,6 @@
             state.isAdmin = false;
             signOut(auth);
             window.navigateTo('home');
-            // Como temos a checagem no Frontend agora, isso atua como uma barreira final de segurança invisível.
         }
 
         // Incrementa visitação real persistente na nuvem (Fica somado "para sempre")
