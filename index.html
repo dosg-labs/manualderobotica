@@ -195,7 +195,7 @@
     <div id="lightbox-modal" class="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/95 backdrop-blur-md hidden no-print" onclick="window.closeLightbox()">
         <button class="absolute top-6 right-6 text-slate-300 hover:text-white transition transform hover:scale-110" title="Fechar"><i data-lucide="x" class="w-10 h-10"></i></button>
         <div id="lightbox-content" class="w-full max-w-5xl max-h-[90vh] p-4 flex justify-center items-center pointer-events-auto" onclick="event.stopPropagation()">
-            <!-- Conteúdo injetado via JS -->
+            <!-- Conteúdo integente via JS -->
         </div>
     </div>
 
@@ -339,20 +339,8 @@
         // EXTRATOR ULTRA-ROBUSTO DE ID DO YOUTUBE (EVITA QUEBRAS POR ERRO DE URL OU PROTOCOLOS FALTANDO)
         window.getYoutubeId = (url) => {
             if (!url) return '';
-            let cleanUrl = url.trim();
-            // Adiciona protocolo se o administrador digitou sem http/https para não quebrar o script
-            if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
-                cleanUrl = 'https://' + cleanUrl;
-            }
-            try {
-                // Regex compatível com: shorts, mobile (m.), watch?v=, embed/, youtu.be/ e parâmetros variados
-                const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
-                const match = cleanUrl.match(regExp);
-                return (match && match[2].length === 11) ? match[2] : '';
-            } catch (e) {
-                console.error("Erro ao analisar URL do YouTube:", e);
-                return '';
-            }
+            const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+            return match ? match[1] : '';
         };
 
         window.getEmbedUrl = (url) => {
@@ -402,6 +390,11 @@
 
         function generateCardHTML(v) {
             const cat = state.categorias.find(c => c.nome === v.categoria) || { cor: '#cbd5e1', emoji: '📄' };
+            const temNoKitHTML = v.temNoKit ? `
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-green-100 text-green-700 border border-green-200 ml-1.5 shadow-sm">
+                    📦 No Kit
+                </span>
+            ` : '';
             return `
                 <div class="bg-white rounded-3xl p-5 shadow-sm border-2 border-slate-100 border-b-4 hover:-translate-y-1 hover:shadow-xl hover:border-b-4 transition-all flex flex-col h-full cursor-pointer group relative overflow-hidden"
                     onclick="window.openItem('${v.id}')">
@@ -409,7 +402,10 @@
                     <div class="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-300" style="background-color: ${cat.cor}"></div>
                     
                     <div class="flex justify-between items-start mb-3 relative z-10">
-                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm" style="background-color: ${cat.cor}">${cat.emoji} ${v.categoria}</span>
+                        <div class="flex items-center flex-wrap gap-y-1">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm" style="background-color: ${cat.cor}">${cat.emoji} ${v.categoria}</span>
+                            ${temNoKitHTML}
+                        </div>
                     </div>
                     <h3 class="text-xl font-extrabold text-slate-800 mb-2 leading-tight group-hover:text-red-600 transition-colors relative z-10">${v.nome}</h3>
                     <p class="text-slate-500 font-medium text-sm line-clamp-3 mb-4 flex-grow relative z-10">${v.descricao}</p>
@@ -424,7 +420,8 @@
         function renderHome() {
             const container = document.getElementById('view-home');
             const featuredItem = state.verbetes.length > 0 ? state.verbetes[Math.floor(Math.random() * state.verbetes.length)] : null;
-            const latestItems = [...state.verbetes].sort((a,b) => (b.dataCriacao || '').localeCompare(a.dataCriacao || '')).slice(0, 3);
+            // LIMITANDO A 2 CARDS RECENTES PARA MANTER SIMETRIA COM O CARD DE DESTAQUE
+            const latestItems = [...state.verbetes].sort((a,b) => (b.dataCriacao || '').localeCompare(a.dataCriacao || '')).slice(0, 2);
 
             container.innerHTML = `
                 <div class="bg-white rounded-3xl p-8 sm:p-12 shadow-sm border-2 border-slate-100 mb-12 flex flex-col md:flex-row items-center justify-between relative overflow-hidden">
@@ -590,11 +587,8 @@
             const cat = state.categorias.find(c => c.nome === item.categoria) || { cor: '#cbd5e1', emoji: '📄' };
             
             // Verificação de vídeo aprimorada e resiliente baseada no extrator de ID do YouTube
-            const isVideo = item.imagemOuVideo && (
-                item.imagemOuVideo.includes('youtube') || 
-                item.imagemOuVideo.includes('youtu.be') || 
-                window.getYoutubeId(item.imagemOuVideo) !== ''
-            );
+            const ytId = window.getYoutubeId(item.imagemOuVideo);
+            const isVideo = !!ytId || (item.imagemOuVideo && item.imagemOuVideo.match(/\.(mp4|webm|ogg)$/i));
 
             // --- Montagem unificada do sistema de mídias perfeitamente alinhadas ---
             let mediaHTML = '';
@@ -604,7 +598,7 @@
                 // Mídia Principal (Ocupa a largura total do contêiner)
                 if (item.imagemOuVideo) {
                     if (isVideo) {
-                        const embedUrl = window.getEmbedUrl(item.imagemOuVideo);
+                        const embedUrl = ytId ? `https://www.youtube.com/embed/${ytId}` : item.imagemOuVideo;
                         mediaHTML += `
                             <div class="w-full aspect-video rounded-3xl overflow-hidden bg-black flex flex-col items-center justify-center relative shadow-md mb-4 border border-slate-100">
                                 <iframe class="w-full h-full" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
@@ -627,10 +621,12 @@
                     mediaHTML += `<div class="grid ${gridCols} gap-4 w-full">`;
                     
                     secMedia.forEach(m => {
-                        const isVid = m.includes('youtube') || m.includes('youtu.be') || window.getYoutubeId(m) !== '';
+                        const sYtId = window.getYoutubeId(m);
+                        const isVid = !!sYtId || m.match(/\.(mp4|webm|ogg)$/i);
+
                         if (isVid) {
-                            const embedUrl = window.getEmbedUrl(m);
-                            const thumbUrl = `https://img.youtube.com/vi/${window.getYoutubeId(m)}/0.jpg`;
+                            const embedUrl = sYtId ? `https://www.youtube.com/embed/${sYtId}` : m;
+                            const thumbUrl = sYtId ? `https://img.youtube.com/vi/${sYtId}/0.jpg` : 'https://via.placeholder.com/300x200?text=Video';
                             mediaHTML += `
                                 <div class="aspect-video w-full bg-slate-900 rounded-2xl flex items-center justify-center cursor-pointer hover:opacity-90 hover:scale-[1.02] transition duration-300 relative shadow-sm border-2 border-slate-100 overflow-hidden" onclick="window.openLightbox('${embedUrl}', true)" title="Assistir Vídeo">
                                     <i data-lucide="play-circle" class="text-white w-10 h-10 absolute z-10 drop-shadow-lg"></i>
@@ -699,10 +695,15 @@
                     <div class="h-16 md:h-20 w-full" style="background-color: ${cat.cor}"></div>
 
                     <div class="p-8 md:p-12">
-                        <div class="flex items-center mb-6">
+                        <div class="flex items-center mb-4 flex-wrap gap-2">
                             <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-extrabold text-white shadow-sm" style="background-color: ${cat.cor}">
                                 ${cat.emoji} ${item.categoria}
                             </span>
+                            ${item.temNoKit ? `
+                                <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-extrabold bg-green-100 text-green-700 border border-green-200 shadow-sm">
+                                    📦 Tem no Kit
+                                </span>
+                            ` : ''}
                         </div>
                         
                         <h1 class="text-4xl md:text-5xl font-extrabold text-slate-800 tracking-tight">${item.nome}</h1>
@@ -725,6 +726,27 @@
                                 <p class="text-lg text-slate-600 font-medium leading-relaxed bg-green-50/50 border-2 border-green-100 p-6 rounded-2xl">${item.exemploUso}</p>
                             </section>` : ''}
 
+                            <!-- OUTROS LINKS ADICIONAIS / DATASHEETS (REQUISITO 2) -->
+                            ${(item.linkAux1_url || item.linkAux2_url || item.linkAux3_url) ? `
+                            <section class="print-break-inside-avoid">
+                                <h3 class="text-xl font-extrabold text-slate-700 mb-3 flex items-center">
+                                    <i data-lucide="file-text" class="w-6 h-6 mr-2 text-slate-500"></i> Documentos e Links Auxiliares
+                                </h3>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full">
+                                    ${[
+                                        { url: item.linkAux1_url, label: item.linkAux1_text || 'Link Auxiliar 1' },
+                                        { url: item.linkAux2_url, label: item.linkAux2_text || 'Link Auxiliar 2' },
+                                        { url: item.linkAux3_url, label: item.linkAux3_text || 'Link Auxiliar 3' }
+                                    ].filter(x => x.url).map(x => `
+                                        <a href="${x.url.startsWith('http') ? x.url : 'https://' + x.url}" target="_blank" class="flex items-center justify-between p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl hover:border-blue-500 hover:bg-blue-50/30 transition duration-300">
+                                            <span class="font-bold text-slate-700 text-sm truncate pr-2">${x.label}</span>
+                                            <i data-lucide="external-link" class="w-4 h-4 text-slate-400"></i>
+                                        </a>
+                                    `).join('')}
+                                </div>
+                            </section>
+                            ` : ''}
+
                             <!-- ABA DE UTILIDADE / FEEDBACK -->
                             <section class="print-break-inside-avoid no-print pt-4">
                                 ${feedbackWidgetHTML}
@@ -742,14 +764,19 @@
                             </section>
                             ` : ''}
 
-                            <!-- BOTÕES DE AÇÃO -->
-                            <section class="flex flex-col sm:flex-row gap-4 pt-6 mt-6 border-t-2 border-slate-100 no-print">
-                                ${item.linkMakeCode ? `
-                                <a href="${item.linkMakeCode}" target="_blank" class="flex-1 bg-[#5C2D91] hover:bg-[#4a2474] text-white p-4 rounded-2xl font-bold text-center flex justify-center items-center shadow-md transform hover:-translate-y-1 transition-all">
-                                    <i data-lucide="external-link" class="w-5 h-5 mr-2"></i> Ver programação de teste no MakeCode
-                                </a>` : ''}
+                            <!-- BOTÕES DE AÇÃO - PROGRAMAÇÃO TESTE (REQUISITO 1) -->
+                            <section class="flex flex-col gap-3 pt-6 mt-6 border-t-2 border-slate-100 no-print">
+                                ${[
+                                    { url: item.linkTeste1_url || item.linkMakeCode, text: item.linkTeste1_text || 'Ver programação de teste no MakeCode' }, // Compatibilidade retroativa
+                                    { url: item.linkTeste2_url, text: item.linkTeste2_text || 'Programação de Teste Alternativa' },
+                                    { url: item.linkTeste3_url, text: item.linkTeste3_text || 'Código de Teste Adicional' }
+                                ].filter(x => x.url).map(x => `
+                                    <a href="${x.url.startsWith('http') ? x.url : 'https://' + x.url}" target="_blank" class="w-full bg-[#5C2D91] hover:bg-[#4a2474] text-white p-4 rounded-2xl font-bold text-center flex justify-center items-center shadow-md transform hover:-translate-y-0.5 transition-all">
+                                        <i data-lucide="external-link" class="w-5 h-5 mr-2"></i> ${x.text}
+                                    </a>
+                                `).join('')}
                                 
-                                <button onclick="window.print()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 p-4 rounded-2xl font-bold text-center flex justify-center items-center shadow-sm transform hover:-translate-y-1 transition-all border-2 border-slate-200">
+                                <button onclick="window.print()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 p-4 rounded-2xl font-bold text-center flex justify-center items-center shadow-sm transform hover:-translate-y-0.5 transition-all border-2 border-slate-200">
                                     <i data-lucide="printer" class="w-5 h-5 mr-2"></i> Imprimir Verbete
                                 </button>
                             </section>
@@ -910,7 +937,7 @@
                     </div>
                 `;
 
-            // 2. FORMULÁRIO DE EDIÇÃO DO VERBETE
+            // 2. FORMULÁRIO DE EDIÇÃO DO VERBETE (CRIAÇÃO/EDIÇÃO)
             } else if (state.activeAdminTab === 'verbetes' && state.editingItem) {
                 const i = state.editingItem;
                 const catOptions = state.categorias.map(c => `<option value="${c.nome}" ${c.nome === i.categoria ? 'selected' : ''}>${c.nome}</option>`).join('');
@@ -950,6 +977,15 @@
                                 <label class="block text-sm font-bold text-slate-700 mb-2">Descrição Completa *</label>
                                 <textarea name="descricao" required rows="4" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700">${i.descricao || ''}</textarea>
                             </div>
+                            
+                            <!-- CHECKBOX: TEM NO KIT (REQUISITO 3) -->
+                            <div class="md:col-span-2 flex items-center space-x-3 p-4 bg-green-50/50 border-2 border-green-200 rounded-2xl">
+                                <input type="checkbox" name="temNoKit" id="temNoKit" ${i.temNoKit ? 'checked' : ''} class="w-5 h-5 text-green-600 rounded border-slate-300 focus:ring-green-500" />
+                                <label for="temNoKit" class="text-sm font-extrabold text-green-800 flex items-center cursor-pointer select-none">
+                                    <span class="text-base mr-1.5">📦</span> Marcar como "Tem no Kit" (Exibe um badge de destaque no manual físico)
+                                </label>
+                            </div>
+
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-bold text-slate-700 mb-2">Exemplo de Uso</label>
                                 <textarea name="exemploUso" rows="2" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700">${i.exemploUso || ''}</textarea>
@@ -976,12 +1012,62 @@
                                 </div>
                             </div>
 
-                            <div class="md:col-span-2 bg-purple-50 p-5 rounded-2xl border-2 border-purple-100">
-                                <label class="block text-sm font-bold text-purple-800 mb-2 flex items-center">
-                                    <i data-lucide="code" class="w-5 h-5 mr-2"></i> Link de Programação de Teste (MakeCode)
-                                </label>
-                                <p class="text-xs text-purple-600 mb-3 font-medium">Insira a URL apenas se for um Componente/Sensor programável.</p>
-                                <input name="linkMakeCode" value="${i.linkMakeCode || ''}" placeholder="Ex: https://makecode.microbit.org/..." class="w-full border-2 border-purple-200 rounded-xl p-3 focus:border-purple-500 outline-none font-medium text-slate-700" />
+                            <!-- REQUISITO 1: ATÊ 3 LINKS DE PROGRAMAÇÃO TESTE COM TEXTO EDITÁVEL -->
+                            <div class="md:col-span-2 bg-purple-50 p-5 rounded-2xl border-2 border-purple-200 space-y-4">
+                                <h4 class="text-sm font-extrabold text-purple-900 flex items-center">
+                                    <i data-lucide="code" class="w-5 h-5 mr-2 text-purple-600"></i> Links de Programação e Testes (Até 3)
+                                </h4>
+                                <p class="text-xs text-purple-700 font-medium">Cadastre links de teste (MakeCode, repositórios, etc.) e configure o texto dos botões de ação.</p>
+                                
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div class="p-3 bg-white rounded-xl border border-purple-100">
+                                        <label class="block text-xs font-bold text-purple-800 mb-1">1º Link de Teste (URL)</label>
+                                        <input name="linkTeste1_url" value="${i.linkTeste1_url || i.linkMakeCode || ''}" placeholder="Ex: https://makecode..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 mb-2 font-medium" />
+                                        <label class="block text-xs font-bold text-purple-800 mb-1">Texto do 1º Botão</label>
+                                        <input name="linkTeste1_text" value="${i.linkTeste1_text || 'Ver programação de teste no MakeCode'}" placeholder="Ex: Programação no MakeCode" class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 font-medium" />
+                                    </div>
+                                    <div class="p-3 bg-white rounded-xl border border-purple-100">
+                                        <label class="block text-xs font-bold text-purple-800 mb-1">2º Link de Teste (URL)</label>
+                                        <input name="linkTeste2_url" value="${i.linkTeste2_url || ''}" placeholder="Ex: https://..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 mb-2 font-medium" />
+                                        <label class="block text-xs font-bold text-purple-800 mb-1">Texto do 2º Botão</label>
+                                        <input name="linkTeste2_text" value="${i.linkTeste2_text || 'Programação de Teste Alternativa'}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 font-medium" />
+                                    </div>
+                                    <div class="p-3 bg-white rounded-xl border border-purple-100 sm:col-span-2">
+                                        <label class="block text-xs font-bold text-purple-800 mb-1">3º Link de Teste (URL)</label>
+                                        <input name="linkTeste3_url" value="${i.linkTeste3_url || ''}" placeholder="Ex: https://..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 mb-2 font-medium" />
+                                        <label class="block text-xs font-bold text-purple-800 mb-1">Texto do 3º Botão</label>
+                                        <input name="linkTeste3_text" value="${i.linkTeste3_text || 'Código de Teste Adicional'}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 font-medium" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- REQUISITO 2: LINKS ADICIONAIS OPCIONAIS (DATASHEETS, MANUAIS, ETC) -->
+                            <div class="md:col-span-2 bg-blue-50/50 p-5 rounded-2xl border-2 border-blue-200 space-y-4">
+                                <h4 class="text-sm font-extrabold text-blue-900 flex items-center">
+                                    <i data-lucide="file-text" class="w-5 h-5 mr-2 text-blue-600"></i> Outros Links Auxiliares (Datasheets, Manuais, etc. - Opcional)
+                                </h4>
+                                <p class="text-xs text-blue-700 font-medium">Estes botões só ficarão visíveis se você preencher a URL de destino correspondente.</p>
+                                
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div class="p-3 bg-white rounded-xl border border-blue-100">
+                                        <label class="block text-xs font-bold text-blue-800 mb-1">Link Auxiliar 1 (URL)</label>
+                                        <input name="linkAux1_url" value="${i.linkAux1_url || ''}" placeholder="https://..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 mb-2 font-medium" />
+                                        <label class="block text-xs font-bold text-blue-800 mb-1">Texto do Botão 1</label>
+                                        <input name="linkAux1_text" value="${i.linkAux1_text || 'Baixar Datasheet Técnico PDF'}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 font-medium" />
+                                    </div>
+                                    <div class="p-3 bg-white rounded-xl border border-blue-100">
+                                        <label class="block text-xs font-bold text-blue-800 mb-1">Link Auxiliar 2 (URL)</label>
+                                        <input name="linkAux2_url" value="${i.linkAux2_url || ''}" placeholder="https://..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 mb-2 font-medium" />
+                                        <label class="block text-xs font-bold text-blue-800 mb-1">Texto do Botão 2</label>
+                                        <input name="linkAux2_text" value="${i.linkAux2_text || 'Manual de Instruções do Sensor'}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 font-medium" />
+                                    </div>
+                                    <div class="p-3 bg-white rounded-xl border border-blue-100">
+                                        <label class="block text-xs font-bold text-blue-800 mb-1">Link Auxiliar 3 (URL)</label>
+                                        <input name="linkAux3_url" value="${i.linkAux3_url || ''}" placeholder="https://..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 mb-2 font-medium" />
+                                        <label class="block text-xs font-bold text-blue-800 mb-1">Texto do Botão 3</label>
+                                        <input name="linkAux3_text" value="${i.linkAux3_text || 'Esquema de Conexão Física'}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 font-medium" />
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- SEÇÃO VEJA TAMBÉM -->
@@ -1056,7 +1142,10 @@
                             <tbody>
                                 ${adminList.length > 0 ? adminList.map(v => `
                                     <tr class="border-b border-slate-100 hover:bg-blue-50 transition-colors">
-                                        <td class="p-4 font-bold text-slate-700">${v.nome}</td>
+                                        <td class="p-4 font-bold text-slate-700 flex items-center">
+                                            <span>${v.nome}</span>
+                                            ${v.temNoKit ? `<span class="bg-green-100 text-green-700 font-extrabold text-[10px] px-2 py-0.5 rounded-full border border-green-200 ml-2">📦 No Kit</span>` : ''}
+                                        </td>
                                         <td class="p-4 font-medium text-slate-500"><span class="bg-slate-100 px-2 py-1 rounded text-xs">${v.categoria}</span></td>
                                         <td class="p-4 flex gap-2 justify-end">
                                             <button onClick="window.editVerbete('${v.id}')" class="p-2 bg-white border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-100 shadow-sm" title="Editar"><i data-lucide="edit" class="w-4 h-4"></i></button>
@@ -1358,14 +1447,16 @@
                     descricao: 'Placa de desenvolvimento educacional, como um pequeno computador que você pode programar, personalizar e controlar.',
                     exemploUso: 'Criar um crachá digital piscante ou um termômetro de bolso.',
                     imagemOuVideo: 'https://images.unsplash.com/photo-1555661530-68c8e98db4e6?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-                    linkMakeCode: 'https://makecode.microbit.org/'
+                    linkTeste1_url: 'https://makecode.microbit.org/', linkTeste1_text: 'Programação de Teste no MakeCode',
+                    temNoKit: true
                 },
                 {
                     id: 'v2', nome: 'Sensor Ultrassônico', categoria: 'Sensores',
                     descricao: 'Módulo que mede a distância de um objeto usando ondas sonoras de alta frequência.',
                     exemploUso: 'Detectar obstáculos em um robô móvel.',
                     imagemOuVideo: 'https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-                    linkMakeCode: ''
+                    linkTeste1_url: '', linkTeste1_text: '',
+                    temNoKit: true
                 }
             ];
 
@@ -1394,14 +1485,16 @@
                     descricao: 'Placa de desenvolvimento educacional, como um pequeno computador que você pode programar, personalizar e controlar.',
                     exemploUso: 'Criar um crachá digital piscante ou um termômetro de bolso.',
                     imagemOuVideo: 'https://images.unsplash.com/photo-1555661530-68c8e98db4e6?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-                    linkMakeCode: 'https://makecode.microbit.org/'
+                    linkTeste1_url: 'https://makecode.microbit.org/', linkTeste1_text: 'Programação de Teste no MakeCode',
+                    temNoKit: true
                 },
                 {
                     id: 'v2', nome: 'Sensor Ultrassônico', categoria: 'Sensores',
                     descricao: 'Módulo que mede a distância de um objeto usando ondas sonoras de alta frequência.',
                     exemploUso: 'Detectar obstáculos em um robô móvel.',
                     imagemOuVideo: 'https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-                    linkMakeCode: ''
+                    linkTeste1_url: '', linkTeste1_text: '',
+                    temNoKit: true
                 }
             ];
             state.contatos = [
@@ -1692,18 +1785,36 @@
         window.saveVerbete = async (event) => {
             event.preventDefault();
             const fd = new FormData(event.target);
+            
             const data = {
                 nome: fd.get('nome'),
                 categoria: fd.get('categoria'),
                 descricao: fd.get('descricao'),
+                temNoKit: fd.get('temNoKit') === 'on', // REQUISITO 3: Salva o estado Boolean de temNoKit
                 exemploUso: fd.get('exemploUso'),
                 imagemOuVideo: fd.get('imagemOuVideo'),
                 midia2: fd.get('midia2') || '',
                 midia3: fd.get('midia3') || '',
                 midia4: fd.get('midia4') || '',
+                
+                // REQUISITO 1: SALVAMENTO DOS 3 LINKS DE TESTE E SEUS LABELS EDITÁVEIS
+                linkTeste1_url: fd.get('linkTeste1_url') || '',
+                linkTeste1_text: fd.get('linkTeste1_text') || '',
+                linkTeste2_url: fd.get('linkTeste2_url') || '',
+                linkTeste2_text: fd.get('linkTeste2_text') || '',
+                linkTeste3_url: fd.get('linkTeste3_url') || '',
+                linkTeste3_text: fd.get('linkTeste3_text') || '',
+                
+                // REQUISITO 2: SALVAMENTO DOS 3 LINKS AUXILIARES (DATASHEETS) E SEUS LABELS EDITÁVEIS
+                linkAux1_url: fd.get('linkAux1_url') || '',
+                linkAux1_text: fd.get('linkAux1_text') || '',
+                linkAux2_url: fd.get('linkAux2_url') || '',
+                linkAux2_text: fd.get('linkAux2_text') || '',
+                linkAux3_url: fd.get('linkAux3_url') || '',
+                linkAux3_text: fd.get('linkAux3_text') || '',
+
                 habilitarRelacionados: fd.get('habilitarRelacionados') === 'on',
                 relacionados: fd.getAll('relacionados') || [],
-                linkMakeCode: fd.get('linkMakeCode'), 
                 dataCriacao: state.editingItem.dataCriacao || new Date().toISOString(),
                 ultimaAtualizacao: new Date().toISOString()
             };
