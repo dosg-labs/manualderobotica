@@ -137,7 +137,7 @@
                 Equipe de Robótica - Secretaria de Estado da Educação de São Paulo - 2026
             </p>
             <p class="text-xs mt-2 opacity-60">
-                Este trabalho está licenciado sob uma Licença Creative Commons Atribuição-NãoComercial-CompartilhaIgual 4.0 Internacional.
+                Este trabalho está licensed sob uma Licença Creative Commons Atribuição-NãoComercial-CompartilhaIgual 4.0 Internacional.
             </p>
         </div>
     </footer>
@@ -326,14 +326,6 @@
             
             modal.classList.remove('hidden');
             closeBtn.onclick = () => { modal.classList.add('hidden'); };
-        };
-
-        window.showLoginModal = () => {
-            document.getElementById('login-modal').classList.remove('hidden');
-        };
-
-        window.hideLoginModal = () => {
-            document.getElementById('login-modal').classList.add('hidden');
         };
 
         // EXTRATOR ULTRA-ROBUSTO DE ID DO YOUTUBE (EVITA QUEBRAS POR ERRO DE URL OU PROTOCOLOS FALTANDO)
@@ -552,7 +544,7 @@
                     <h2 class="text-3xl font-extrabold text-slate-800">Glossário Interativo</h2>
                     <div class="relative w-full md:w-96">
                         <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <i data-lucide="search" class="h-5 w-5 text-slate-400"></i>
+                            <i data-lucide="search" class="h-5 w-5 text-slate-400" />
                         </div>
                         <input type="text" oninput="window.updateSearch(this.value)" value="${state.searchQuery}"
                             class="block w-full pl-11 pr-4 py-3 bg-white border-2 border-slate-200 rounded-full font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:border-red-500 focus:ring-0 transition-colors shadow-sm"
@@ -726,7 +718,31 @@
                                 <p class="text-lg text-slate-600 font-medium leading-relaxed bg-green-50/50 border-2 border-green-100 p-6 rounded-2xl">${item.exemploUso}</p>
                             </section>` : ''}
 
-                            <!-- OUTROS LINKS ADICIONAIS / DATASHEETS (REQUISITO 2) -->
+                            <!-- REQUISITO 1: LINKS DE PROGRAMAÇÃO TESTE COM TEXTO EDITÁVEL (POSICIONADO APÓS EXEMPLO DE USO) -->
+                            ${[
+                                { url: item.linkTeste1_url || item.linkMakeCode, text: item.linkTeste1_text || 'Ver programação de teste no MakeCode' }, // Compatibilidade retroativa
+                                { url: item.linkTeste2_url, text: item.linkTeste2_text || 'Programação de Teste Alternativa' },
+                                { url: item.linkTeste3_url, text: item.linkTeste3_text || 'Código de Teste Adicional' }
+                            ].some(x => x.url) ? `
+                            <section class="print-break-inside-avoid">
+                                <h3 class="text-xl font-extrabold text-slate-700 mb-3 flex items-center">
+                                    <i data-lucide="code" class="w-6 h-6 mr-2 text-purple-600"></i> Programação de Teste
+                                </h3>
+                                <div class="flex flex-col gap-3 w-full">
+                                    ${[
+                                        { url: item.linkTeste1_url || item.linkMakeCode, text: item.linkTeste1_text || 'Ver programação de teste no MakeCode' },
+                                        { url: item.linkTeste2_url, text: item.linkTeste2_text || 'Programação de Teste Alternativa' },
+                                        { url: item.linkTeste3_url, text: item.linkTeste3_text || 'Código de Teste Adicional' }
+                                    ].filter(x => x.url).map(x => `
+                                        <a href="${x.url.startsWith('http') ? x.url : 'https://' + x.url}" target="_blank" class="w-full bg-[#5C2D91] hover:bg-[#4a2474] text-white p-4 rounded-2xl font-bold text-center flex justify-center items-center shadow-md transform hover:-translate-y-0.5 transition-all">
+                                            <i data-lucide="external-link" class="w-5 h-5 mr-2"></i> ${x.text}
+                                        </a>
+                                    `).join('')}
+                                </div>
+                            </section>
+                            ` : ''}
+
+                            <!-- OUTROS LINKS ADICIONAIS / DATASHEETS (REQUISITO 2 - APÓS OS LINKS DE TESTE) -->
                             ${(item.linkAux1_url || item.linkAux2_url || item.linkAux3_url) ? `
                             <section class="print-break-inside-avoid">
                                 <h3 class="text-xl font-extrabold text-slate-700 mb-3 flex items-center">
@@ -747,12 +763,19 @@
                             </section>
                             ` : ''}
 
-                            <!-- ABA DE UTILIDADE / FEEDBACK -->
+                            <!-- ABA DE UTILIDADE / FEEDBACK (APÓS OS DOCUMENTOS) -->
                             <section class="print-break-inside-avoid no-print pt-4">
                                 ${feedbackWidgetHTML}
                             </section>
 
-                            <!-- VEJA TAMBÉM (RELACIONADOS) -->
+                            <!-- BOTÃO DE IMPRESSÃO (NOVO REQUISITO VISUAL) -->
+                            <section class="print-break-inside-avoid no-print pt-2">
+                                <button onclick="window.print()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 p-4 rounded-2xl font-bold text-center flex justify-center items-center shadow-sm transform hover:-translate-y-0.5 transition-all border-2 border-slate-200">
+                                    <i data-lucide="printer" class="w-5 h-5 mr-2"></i> Imprimir Verbete
+                                </button>
+                            </section>
+
+                            <!-- VEJA TAMBÉM (RELACIONADOS - ATÉ O FINAL DO VERBATE) -->
                             ${(item.habilitarRelacionados && item.relacionados && item.relacionados.length > 0) ? `
                             <section class="print-break-inside-avoid pt-8 mt-8 border-t-2 border-slate-100">
                                 <h3 class="text-2xl font-extrabold text-slate-800 mb-6 flex items-center">
@@ -763,23 +786,6 @@
                                 </div>
                             </section>
                             ` : ''}
-
-                            <!-- BOTÕES DE AÇÃO - PROGRAMAÇÃO TESTE (REQUISITO 1) -->
-                            <section class="flex flex-col gap-3 pt-6 mt-6 border-t-2 border-slate-100 no-print">
-                                ${[
-                                    { url: item.linkTeste1_url || item.linkMakeCode, text: item.linkTeste1_text || 'Ver programação de teste no MakeCode' }, // Compatibilidade retroativa
-                                    { url: item.linkTeste2_url, text: item.linkTeste2_text || 'Programação de Teste Alternativa' },
-                                    { url: item.linkTeste3_url, text: item.linkTeste3_text || 'Código de Teste Adicional' }
-                                ].filter(x => x.url).map(x => `
-                                    <a href="${x.url.startsWith('http') ? x.url : 'https://' + x.url}" target="_blank" class="w-full bg-[#5C2D91] hover:bg-[#4a2474] text-white p-4 rounded-2xl font-bold text-center flex justify-center items-center shadow-md transform hover:-translate-y-0.5 transition-all">
-                                        <i data-lucide="external-link" class="w-5 h-5 mr-2"></i> ${x.text}
-                                    </a>
-                                `).join('')}
-                                
-                                <button onclick="window.print()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 p-4 rounded-2xl font-bold text-center flex justify-center items-center shadow-sm transform hover:-translate-y-0.5 transition-all border-2 border-slate-200">
-                                    <i data-lucide="printer" class="w-5 h-5 mr-2"></i> Imprimir Verbete
-                                </button>
-                            </section>
                         </div>
                     </div>
                 </div>
