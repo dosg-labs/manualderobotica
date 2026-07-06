@@ -328,6 +328,14 @@
             closeBtn.onclick = () => { modal.classList.add('hidden'); };
         };
 
+        window.showLoginModal = () => {
+            document.getElementById('login-modal').classList.remove('hidden');
+        };
+
+        window.hideLoginModal = () => {
+            document.getElementById('login-modal').classList.add('hidden');
+        };
+
         // EXTRATOR ULTRA-ROBUSTO DE ID DO YOUTUBE (EVITA QUEBRAS POR ERRO DE URL OU PROTOCOLOS FALTANDO)
         window.getYoutubeId = (url) => {
             if (!url) return '';
@@ -1319,15 +1327,21 @@
         // CONFIGURAÇÃO DOS ESCUTADORES DO BANCO (Firestore)
         // ==========================================
         let adminUnsubscribers = [];
+        let publicUnsubscribers = [];
 
         function setupPublicListeners() {
             if (!db) return;
+
+            // Cancela ouvintes públicos ativos anteriormente para evitar duplicações e vazamento de memória
+            publicUnsubscribers.forEach(unsub => unsub());
+            publicUnsubscribers = [];
+
             const catRef = collection(db, 'artifacts', appId, 'public', 'data', 'categorias');
             const verbRef = collection(db, 'artifacts', appId, 'public', 'data', 'verbetes');
             const statRef = doc(db, 'artifacts', appId, 'public', 'data', 'estatisticas', 'geral');
 
             // Categorias e Verbetes são públicos e carregam sem autenticação restrita
-            onSnapshot(catRef, (snapshot) => {
+            const unsubCat = onSnapshot(catRef, (snapshot) => {
                 state.categorias = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 if (state.categorias.length === 0) seedDatabase();
                 renderView();
@@ -1336,7 +1350,7 @@
                 fallbackToOfflineMode("Categorias");
             });
 
-            onSnapshot(verbRef, (snapshot) => {
+            const unsubVerb = onSnapshot(verbRef, (snapshot) => {
                 state.verbetes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 document.getElementById('loading-view').classList.add('hidden');
                 renderView();
@@ -1346,7 +1360,7 @@
             });
 
             // Escuta o contador real de acessos persistentes
-            onSnapshot(statRef, (docSnap) => {
+            const unsubStat = onSnapshot(statRef, (docSnap) => {
                 if (docSnap.exists()) {
                     state.acessos = docSnap.data().acessos || 0;
                     if (state.view === 'home') renderView();
@@ -1354,6 +1368,8 @@
             }, (err) => {
                 console.warn("Erro ao ler estatisticas:", err);
             });
+
+            publicUnsubscribers.push(unsubCat, unsubVerb, unsubStat);
         }
 
         // GERENCIADOR DE OUVINTES ADMINISTRATIVOS EM TEMPO REAL
@@ -1430,13 +1446,17 @@
         }
 
         // Função de escape: Se houver falha de permissão no Firestore, muda para simulação offline
+        let offlineFallbackTriggered = false;
         function fallbackToOfflineMode(sourceName) {
+            if (offlineFallbackTriggered) return;
+            offlineFallbackTriggered = true;
+
             const spinner = document.getElementById('loading-view');
-            if (spinner && !spinner.classList.contains('hidden')) {
+            if (spinner) {
                 spinner.classList.add('hidden');
-                console.warn(`[Permissões do Firestore] Fallback offline ativo devido a erro em: ${sourceName}`);
-                seedLocalDatabase();
             }
+            console.warn(`[Permissões do Firestore] Fallback offline ativo devido a erro em: ${sourceName}`);
+            seedLocalDatabase();
         }
 
         async function seedDatabase() {
