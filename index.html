@@ -20,6 +20,11 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
+    <!-- Google Fonts: Chakra Petch para uma tipografia futurista/robótica -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700;800&display=swap" rel="stylesheet">
+
     <!-- Importmap para inicialização dos Módulos do Firebase -->
     <script type="importmap">
         {
@@ -77,14 +82,9 @@
                     <div class="bg-gradient-to-tr from-red-600 to-red-500 p-2.5 rounded-2xl mr-3 shadow-md shadow-red-500/20 group-hover:scale-105 transition-transform duration-300">
                         <i data-lucide="book-open" class="text-white h-6 w-6"></i>
                     </div>
-                    <div class="flex flex-col">
-                        <span class="font-black text-2xl tracking-tight text-slate-900 leading-none group-hover:text-red-600 transition-colors">
-                            ROBOPÉDIA<span class="text-red-600"></span>
-                        </span>
-                        <span class="text-[10px] sm:text-xs font-bold text-slate-500 tracking-wider uppercase mt-1">
-                            O Manual de Robótica <span class="text-red-500">da</span> SEDUC-SP
-                        </span>
-                    </div>
+                    <span class="font-extrabold text-2xl tracking-wider text-slate-900" style="font-family: 'Chakra Petch', sans-serif;">
+                        Robo<span class="text-red-600">pédia</span>
+                    </span>
                 </div>
                 
                 <!-- Menu Desktop -->
@@ -437,7 +437,7 @@
                     
                     <div class="max-w-xl mb-8 md:mb-0 relative z-10">
                         <div class="inline-block bg-red-100 text-red-700 font-bold px-3 py-1 rounded-full text-sm mb-4 border border-red-200">🤖 Robopédia Oficial</div>
-                        <h1 class="text-4xl sm:text-5xl font-extrabold mb-4 leading-tight text-slate-900">Aprenda Robótica de <span class="text-red-600">Forma Divertida!</span></h1>
+                        <h1 class="text-4xl sm:text-5xl font-extrabold mb-4 leading-tight text-slate-900">O Manual de Robótica da <span class="text-red-600">SEDUC-SP!</span></h1>
                         <p class="text-lg font-medium text-slate-600 mb-6">Explore componentes, sensores, ferramentas e conceitos com o nosso glossário interativo.</p>
                         <button onclick="window.navigateTo('glossary')" class="bg-red-600 text-white font-extrabold py-3 px-8 rounded-full shadow-md hover:bg-red-700 hover:shadow-lg hover:-translate-y-1 transition-all">Começar a Explorar</button>
                     </div>
@@ -723,8 +723,7 @@
                     <form onsubmit="window.submitNegativeFeedback(event)" class="bg-red-50 border-2 border-red-100 rounded-2xl p-6 animate-in fade-in">
                         <h4 class="font-extrabold text-red-800 mb-2 text-lg">Como podemos melhorar este verbete?</h4>
                         <p class="text-slate-600 text-sm font-medium mb-4">Diga-nos o que ficou confuso ou o que falta explicar.</p>
-                        <textarea id="feedback-text-input" required rows="3" placeholder="Sua sugestão ou crítica..." 
-                            class="w-full border-2 border-red-200 rounded-xl p-3 focus:border-red-500 outline-none font-medium text-slate-700 mb-4"></textarea>
+                        <textarea id="feedback-text-input" required rows="3" placeholder="Sua sugestão ou crítica..." class="w-full border-2 border-red-200 rounded-xl p-3 focus:border-red-500 outline-none font-medium text-slate-700 mb-4"></textarea>
                         <div class="flex gap-2">
                             <button type="submit" class="bg-red-600 text-white font-bold py-2 px-6 rounded-xl hover:bg-red-700 transition">Enviar sugestão</button>
                             <button type="button" onclick="state.showFeedbackInput = false; renderItem();" class="text-slate-500 hover:text-slate-700 font-bold py-2 px-4">Cancelar</button>
@@ -758,6 +757,7 @@
                 </div>
 
                 <div class="bg-white rounded-[2rem] shadow-xl overflow-hidden border-2 border-slate-100 mb-8">
+                    <!-- Banner de Cor -->
                     <div class="h-16 md:h-20 w-full" style="background-color: ${cat.cor}"></div>
 
                     <div class="p-8 md:p-12">
@@ -792,6 +792,7 @@
                                 <p class="text-lg text-slate-600 font-medium leading-relaxed bg-green-50/50 border-2 border-green-100 p-6 rounded-2xl">${item.exemploUso}</p>
                             </section>` : ''}
 
+                            <!-- REQUISITO 1: LINKS DE PROGRAMAÇÃO TESTE COM TEXTO EDITÁVEL (POSICIONADO APÓS EXEMPLO DE USO) -->
                             ${[
                                 { url: item.linkTeste1_url || item.linkMakeCode, text: item.linkTeste1_text || 'Ver programação de teste no MakeCode' },
                                 { url: item.linkTeste2_url, text: item.linkTeste2_text || 'Programação de Teste Alternativa' },
@@ -815,6 +816,7 @@
                             </section>
                             ` : ''}
 
+                            <!-- OUTROS LINKS ADICIONAIS / DATASHEETS (REQUISITO 2 - APÓS OS LINKS DE TESTE) -->
                             ${(item.linkAux1_url || item.linkAux2_url || item.linkAux3_url) ? `
                             <section class="print-break-inside-avoid">
                                 <h3 class="text-xl font-extrabold text-slate-700 mb-3 flex items-center">
@@ -835,16 +837,19 @@
                             </section>
                             ` : ''}
 
+                            <!-- ABA DE UTILIDADE / FEEDBACK (APÓS OS DOCUMENTOS) -->
                             <section class="print-break-inside-avoid no-print pt-4">
                                 ${feedbackWidgetHTML}
                             </section>
 
+                            <!-- BOTÃO DE IMPRESSÃO (NOVO REQUISITO VISUAL) -->
                             <section class="print-break-inside-avoid no-print pt-2">
                                 <button onclick="window.print()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 p-4 rounded-2xl font-bold text-center flex justify-center items-center shadow-sm transform hover:-translate-y-0.5 transition-all border-2 border-slate-200">
                                     <i data-lucide="printer" class="w-5 h-5 mr-2"></i> Imprimir Verbete
                                 </button>
                             </section>
 
+                            <!-- VEJA TAMBÉM (RELACIONADOS - ATÉ O FINAL DO VERBATE) -->
                             ${(item.habilitarRelacionados && item.relacionados && item.relacionados.length > 0) ? `
                             <section class="print-break-inside-avoid pt-8 mt-8 border-t-2 border-slate-100">
                                 <h3 class="text-2xl font-extrabold text-slate-800 mb-6 flex items-center">
@@ -870,8 +875,8 @@
                     <div class="max-w-2xl mx-auto px-4 py-20 text-center">
                         <i data-lucide="shield-alert" class="w-20 h-20 text-red-400 mx-auto mb-6"></i>
                         <h2 class="text-3xl font-extrabold text-slate-800 mb-4">Acesso Restrito</h2>
-                        <p class="text-lg text-slate-600 mb-8 font-medium">Seu login foi efetuado, mas esta conta do Google não possui permissões no banco de dados Firebase do projeto.</p>
-                        <button onclick="window.adminLogout()" class="bg-red-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-red-700 transition-colors">Entrar com Outra Conta</button>
+                        <p class="text-lg text-slate-600 mb-8 font-medium">Você precisa estar logado com um e-mail de administrador para acessar esta área.</p>
+                        <button onclick="window.adminLogin()" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-blue-700 transition-colors">Fazer Login com Google</button>
                     </div>
                 `;
                 return;
@@ -1098,7 +1103,7 @@
                                 <h4 class="text-sm font-extrabold text-purple-900 flex items-center">
                                     <i data-lucide="code" class="w-5 h-5 mr-2 text-purple-600"></i> Links de Programação e Testes (Até 3)
                                 </h4>
-                                <p class="text-xs text-purple-700 font-medium">Cadastre links de teste (MakeCode, repositórios, etc.) e configure o texto dos botões de ação.</p>
+                                <p class="text-xs text-purple-700 font-medium">Cadastre links de teste (MakeCode, repositórios, etc.) e configure o text dos botões de ação.</p>
                                 
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div class="p-3 bg-white rounded-xl border border-purple-100">
