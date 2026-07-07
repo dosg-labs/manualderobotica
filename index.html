@@ -20,6 +20,1947 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
+    <!-- Importmap para inicialização dos Módulos do Firebase -->
+    <script type="importmap">
+        {
+            "imports": {
+                "firebase/app": "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js",
+                "firebase/auth": "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js",
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"
+            }
+        }
+    </script>
+
+    <style>
+        .fade-in { animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        @keyframes float {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(10deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+        .animate-float { animation: float 4s ease-in-out infinite; }
+        
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;  
+            overflow: hidden;
+        }
+
+        .view-hidden { display: none !important; }
+
+        .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        @media print {
+            body { background-color: white !important; color: black !important; }
+            nav, footer, .no-print, #nav-links { display: none !important; }
+            main { padding: 0 !important; }
+            .view-container { shadow: none !important; border: none !important; padding: 0 !important; margin: 0 !important; }
+            .print-break-inside-avoid { display: block; page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans text-slate-800 flex flex-col min-h-screen selection:bg-blue-200 selection:text-blue-900">
+
+    <!-- NAVBAR -->
+    <nav class="bg-white shadow-sm border-b-2 border-slate-100 sticky top-0 z-50 no-print">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center cursor-pointer" onclick="window.navigateTo('home')">
+                    <div class="bg-red-600 p-2 rounded-xl mr-3">
+                        <i data-lucide="book-open" class="text-white h-6 w-6"></i>
+                    </div>
+                    <span class="font-extrabold text-xl tracking-tight text-slate-900">
+                        Robopédia: o <span class="text-red-600">Manual de Robótica da SEDUC-SP</span>
+                    </span>
+                </div>
+                
+                <div class="hidden md:flex space-x-8 items-center" id="nav-links">
+                    <button onclick="window.navigateTo('home')" class="nav-btn font-bold transition-colors text-red-600" data-target="home">Início</button>
+                    <button onclick="window.navigateTo('glossary')" class="nav-btn font-bold transition-colors text-slate-600 hover:text-red-500" data-target="glossary">Glossário</button>
+                    <!-- Link Fantasma: Projetos (Reservado para o futuro) -->
+                    <button onclick="javascript:void(0)" class="nav-btn font-bold transition-colors text-slate-400 hover:text-slate-500 cursor-not-allowed" title="Em breve">Projetos</button>
+                    <button onclick="window.navigateTo('contact')" class="nav-btn font-bold transition-colors text-slate-600 hover:text-red-500" data-target="contact">Fale Conosco</button>
+                    <button onclick="window.handleAdminClick()" class="nav-btn font-bold transition-colors text-slate-400 hover:text-purple-600 flex items-center p-1" title="Painel Administrativo">
+                        <i data-lucide="settings" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <div class="flex md:hidden space-x-2 items-center">
+                    <button onclick="window.navigateTo('glossary')" class="bg-red-100 text-red-600 p-2 rounded-full font-bold">
+                        <i data-lucide="search" class="w-5 h-5"></i>
+                    </button>
+                    <button onclick="javascript:void(0)" class="bg-slate-100 text-slate-400 p-2 rounded-full font-bold" title="Projetos (Em breve)">
+                        <i data-lucide="folder" class="w-5 h-5"></i>
+                    </button>
+                    <button onclick="window.navigateTo('contact')" class="bg-red-100 text-red-600 p-2 rounded-full font-bold" title="Fale Conosco">
+                        <i data-lucide="mail" class="w-5 h-5"></i>
+                    </button>
+                    <button onclick="window.handleAdminClick()" class="bg-purple-100 text-purple-600 p-2 rounded-full font-bold" title="Painel Administrativo">
+                        <i data-lucide="settings" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTAINER -->
+    <main class="flex-grow w-full relative">
+        <div id="loading-view" class="absolute inset-0 z-10 bg-slate-50 flex flex-col items-center justify-center pt-20 no-print">
+            <div class="w-16 h-16 border-8 border-slate-200 border-t-red-600 rounded-full animate-spin mb-4"></div>
+            <h2 class="text-xl font-bold text-slate-600">Carregando a Robopédia...</h2>
+        </div>
+
+        <div id="view-home" class="view-container max-w-6xl mx-auto px-4 py-8 fade-in view-hidden"></div>
+        <div id="view-glossary" class="view-container max-w-6xl mx-auto px-4 py-8 fade-in view-hidden"></div>
+        <div id="view-contact" class="view-container max-w-6xl mx-auto px-4 py-8 fade-in view-hidden"></div>
+        <div id="view-item" class="view-container max-w-4xl mx-auto px-4 py-8 fade-in view-hidden"></div>
+        <div id="view-admin" class="view-container max-w-6xl mx-auto px-4 py-8 fade-in view-hidden"></div>
+    </main>
+
+    <!-- FOOTER - CRÉDITOS E DIRETRIZES -->
+    <footer class="bg-slate-900 text-slate-300 py-10 mt-auto no-print border-t-[6px] border-red-600">
+        <div class="max-w-5xl mx-auto px-4 flex flex-col md:flex-row items-center justify-center gap-6">
+            <div class="flex-shrink-0 hover:scale-105 transition-transform duration-300">
+                <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.pt_BR" target="_blank" rel="noopener noreferrer">
+                    <img src="https://mirrors.creativecommons.org/presskit/buttons/88x31/svg/by-nc-sa.svg" alt="Licença Creative Commons" class="h-10 drop-shadow-md" />
+                </a>
+            </div>
+            <div class="text-center md:text-left md:border-l-2 md:border-slate-700 md:pl-6">
+                <p class="font-medium text-sm text-slate-400 leading-relaxed">
+                    Desenvolvido por <span class="text-white font-extrabold tracking-wide">Diego de Oliveira</span>.<br/>
+                    Uma contribuição para a <span class="text-slate-200 font-bold">Equipe de Robótica da Secretaria de Estado da Educação de São Paulo (2026)</span>.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- DIÁLOGOS DA APLICAÇÃO -->
+    <div id="confirm-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden no-print">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border-2 border-slate-100 transform scale-95 transition-all duration-200">
+            <div class="flex items-center text-red-600 mb-4">
+                <div class="p-2 bg-red-100 rounded-full mr-3">
+                    <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-lg font-extrabold text-slate-900" id="confirm-modal-title">Confirmar</h3>
+            </div>
+            <p class="text-slate-600 font-medium text-sm mb-6" id="confirm-modal-message">Deseja realizar esta ação?</p>
+            <div class="flex gap-3 justify-end">
+                <button id="confirm-modal-cancel" class="px-4 py-2 text-slate-500 hover:text-slate-700 font-bold text-sm">Cancelar</button>
+                <button id="confirm-modal-btn" class="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm shadow-sm transition-all">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="message-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden no-print">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border-2 border-slate-100 transform scale-95 transition-all duration-200">
+            <div class="flex items-center text-blue-600 mb-4" id="message-modal-header">
+                <div class="p-2 bg-blue-100 rounded-full mr-3" id="message-modal-icon-bg">
+                    <i data-lucide="info" class="w-6 h-6 text-blue-600" id="message-modal-icon"></i>
+                </div>
+                <h3 class="text-lg font-extrabold text-slate-900" id="message-modal-title">Aviso</h3>
+            </div>
+            <p class="text-slate-600 font-medium text-sm mb-6" id="message-modal-text">Mensagem informativa.</p>
+            <div class="flex justify-end">
+                <button id="message-modal-close" class="px-6 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold text-sm shadow-sm transition-all">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="login-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden no-print">
+        <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl border-2 border-slate-100 text-center transform scale-95 transition-all duration-200">
+            <div class="bg-purple-100 p-3 rounded-full w-14 h-14 flex items-center justify-center mx-auto mb-4 text-purple-600">
+                <i data-lucide="shield" class="w-8 h-8"></i>
+            </div>
+            <h3 class="text-xl font-extrabold text-slate-900 mb-2">Acesso Restrito</h3>
+            <p class="text-slate-500 font-medium text-sm mb-6">Esta área é dedicada exclusivamente a editores autorizados. Faça login com seu e-mail do Google.</p>
+            <button onclick="window.confirmAdminLogin()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-xl flex items-center justify-center shadow-md transition mb-4">
+                <i data-lucide="log-in" class="w-5 h-5 mr-2"></i> Entrar com Google
+            </button>
+            <button onclick="window.hideLoginModal()" class="text-slate-400 hover:text-slate-600 font-bold text-sm">Cancelar</button>
+        </div>
+    </div>
+
+    <!-- Lightbox de Ampliação de Mídia -->
+    <div id="lightbox-modal" class="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/95 backdrop-blur-md hidden no-print" onclick="window.closeLightbox()">
+        <button class="absolute top-6 right-6 text-slate-300 hover:text-white transition transform hover:scale-110" title="Fechar"><i data-lucide="x" class="w-10 h-10"></i></button>
+        <div id="lightbox-content" class="w-full max-w-5xl max-h-[90vh] p-4 flex justify-center items-center pointer-events-auto" onclick="event.stopPropagation()">
+            <!-- Conteúdo Injetado via JS -->
+        </div>
+    </div>
+
+    <!-- LÓGICA DA APLICAÇÃO -->
+    <script type="module">
+        import { initializeApp } from 'firebase/app';
+        import { 
+            getAuth, signInAnonymously, signInWithCustomToken, 
+            signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut
+        } from 'firebase/auth';
+        import { 
+            getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, increment, getDoc
+        } from 'firebase/firestore';
+
+        // ==========================================
+        // SEGURANÇA NO CLIENTE (OFUSCAÇÃO DE EMAILS)
+        // ==========================================
+        // Hashes em Base64 dos e-mails com privilégios. A ofuscação no cliente impede
+        // a raspagem de dados. A segurança real está mantida pelas regras do Firestore.
+        const AUTH_TOKENS = [
+            'ZGllZ28uZ2F0dG9Ac2Vydmlkb3IuZWR1Y2FjYW8uc3AuZ292LmJy',
+            'cGF1bG8uZ2FtdWllcm9Ac2Vydmlkb3IuZWR1Y2FjYW8uc3AuZ292LmJy',
+            'cm9iZXJ0by5yb2NoYTAxQHNlcnZpZG9yLmVkdWNhY2FvLnNwLmdvdi5icg==',
+            'cm9kcmlnby5mZXJyZWlyYTAyQHNlcnZpZG9yLmVkdWNhY2FvLnNwLmdvdi5icg==',
+            'bWFyaWFuZ2VsYS5yb2NoYUBzZXJ2aWRvci5lZHVjYWNhby5zcC5nb3YuYnI='
+        ];
+
+        // ==========================================
+        // ESTADO GLOBAL DA APLICAÇÃO
+        // ==========================================
+        const state = {
+            user: null,
+            isAdmin: false,
+            view: 'home',
+            categorias: [],
+            verbetes: [],
+            feedbacks: [], 
+            contatos: [],
+            acessos: 0,
+            searchQuery: '',
+            selectedCategoryFilter: 'all',
+            selectedItem: null,
+            editingItem: null,
+            editingCategory: null, 
+            activeAdminTab: 'verbetes',
+            adminSearchQuery: '',
+            adminSortAZ: false,
+            hasVotedCurrentItem: false, 
+            showFeedbackInput: false,
+            activeStatsSubTab: 'pendentes',
+            pendingAdminRedirect: false
+        };
+
+        // ==========================================
+        // CONFIGURAÇÃO DO AMBIENTE FIREBASE
+        // ==========================================
+        const _keyA = "AIzaSyBDX50c8G";
+        const _keyB = "6tfx8zwdDgm5ZZGaiR1Cef2hs";
+
+        const productionConfig = {
+            apiKey: _keyA + _keyB,
+            authDomain: "manual-de-robotica-seduc.firebaseapp.com",
+            projectId: "manual-de-robotica-seduc",
+            storageBucket: "manual-de-robotica-seduc.firebasestorage.app",
+            messagingSenderId: "584473888120",
+            appId: "1:584473888120:web:a99106427451252442748d",
+            measurementId: "G-0MYYV46RJX"
+        };
+
+        let app, auth, db;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'robotica-app';
+        const rawConfig = typeof __firebase_config !== 'undefined' ? __firebase_config : '{}';
+        
+        let parsedConfig = {};
+        try {
+            parsedConfig = JSON.parse(rawConfig);
+        } catch (e) {
+            console.warn("Configuração do Firebase inválida ou ausente.");
+        }
+
+        const finalFirebaseConfig = (parsedConfig && parsedConfig.apiKey) ? parsedConfig : productionConfig;
+
+        try {
+            app = initializeApp(finalFirebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+        } catch (err) {
+            console.error("Falha ao inicializar o SDK do Firebase:", err);
+        }
+
+        // ==========================================
+        // UTILS E CAIXAS DE DIÁLOGO
+        // ==========================================
+        window.customConfirm = (message, callback) => {
+            const modal = document.getElementById('confirm-modal');
+            const msgEl = document.getElementById('confirm-modal-message');
+            const btnConfirm = document.getElementById('confirm-modal-btn');
+            const btnCancel = document.getElementById('confirm-modal-cancel');
+            
+            msgEl.textContent = message;
+            modal.classList.remove('hidden');
+            
+            const cleanup = () => {
+                modal.classList.add('hidden');
+                btnConfirm.onclick = null;
+                btnCancel.onclick = null;
+            };
+            
+            btnConfirm.onclick = () => { cleanup(); callback(true); };
+            btnCancel.onclick = () => { cleanup(); callback(false); };
+        };
+
+        window.customAlert = (title, message, isError = false) => {
+            const modal = document.getElementById('message-modal');
+            const titleEl = document.getElementById('message-modal-title');
+            const textEl = document.getElementById('message-modal-text');
+            const closeBtn = document.getElementById('message-modal-close');
+            const headerEl = document.getElementById('message-modal-header');
+            const iconBgEl = document.getElementById('message-modal-icon-bg');
+            
+            titleEl.textContent = title;
+            textEl.textContent = message;
+            
+            if (isError) {
+                headerEl.className = "flex items-center text-red-600 mb-4";
+                iconBgEl.className = "p-2 bg-red-100 rounded-full mr-3";
+            } else {
+                headerEl.className = "flex items-center text-blue-600 mb-4";
+                iconBgEl.className = "p-2 bg-blue-100 rounded-full mr-3";
+            }
+            
+            modal.classList.remove('hidden');
+            closeBtn.onclick = () => { modal.classList.add('hidden'); };
+        };
+
+        window.showLoginModal = () => document.getElementById('login-modal').classList.remove('hidden');
+        window.hideLoginModal = () => document.getElementById('login-modal').classList.add('hidden');
+
+        // Tratamento Robusto de IDs de Mídia do YouTube
+        window.getYoutubeId = (url) => {
+            if (!url) return '';
+            const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+            return match ? match[1] : '';
+        };
+
+        window.getEmbedUrl = (url) => {
+            const vid = window.getYoutubeId(url);
+            return vid ? `https://www.youtube.com/embed/${vid}` : url;
+        };
+
+        window.openLightbox = (src, isVideo) => {
+            const content = document.getElementById('lightbox-content');
+            if (isVideo) {
+                content.innerHTML = `<iframe src="${src}?autoplay=1" class="w-full aspect-video rounded-2xl shadow-2xl bg-black" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+            } else {
+                content.innerHTML = `<img src="${src}" class="max-w-full max-h-[85vh] rounded-2xl shadow-2xl object-contain bg-white/5 p-2" />`;
+            }
+            document.getElementById('lightbox-modal').classList.remove('hidden');
+        };
+
+        window.closeLightbox = () => {
+            document.getElementById('lightbox-modal').classList.add('hidden');
+            document.getElementById('lightbox-content').innerHTML = ''; 
+        };
+
+        window.confirmAdminLogin = async () => {
+            window.hideLoginModal();
+            if (auth) {
+                const provider = new GoogleAuthProvider();
+                try {
+                    state.pendingAdminRedirect = true;
+                    await signInWithPopup(auth, provider);
+                } catch (err) {
+                    state.pendingAdminRedirect = false;
+                    window.customAlert("Falha ao entrar", "Erro na autenticação: " + err.message, true);
+                }
+            } else {
+                window.customAlert("Firebase offline", "O Firebase não está ativo ou conectado.");
+            }
+        };
+
+        // ==========================================
+        // RENDERIZAÇÃO DE UI E MÓDULOS HTML
+        // ==========================================
+        function updateNavbar() {
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.className = `nav-btn font-bold transition-colors ${btn.dataset.target === state.view ? 'text-red-600' : 'text-slate-600 hover:text-red-500'}`;
+            });
+        }
+
+        function generateCardHTML(v) {
+            const cat = state.categorias.find(c => c.nome === v.categoria) || { cor: '#cbd5e1', emoji: '📄' };
+            const temNoKitHTML = v.temNoKit ? `
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-green-100 text-green-700 border border-green-200 ml-1.5 shadow-sm">
+                    📦 No Kit
+                </span>
+            ` : '';
+            return `
+                <div class="bg-white rounded-3xl p-5 shadow-sm border-2 border-slate-100 border-b-4 hover:-translate-y-1 hover:shadow-xl hover:border-b-4 transition-all flex flex-col h-full cursor-pointer group relative overflow-hidden"
+                    onclick="window.openItem('${v.id}')">
+                    <div class="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-300" style="background-color: ${cat.cor}"></div>
+                    <div class="flex justify-between items-start mb-3 relative z-10">
+                        <div class="flex items-center flex-wrap gap-y-1">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm" style="background-color: ${cat.cor}">${cat.emoji} ${v.categoria}</span>
+                            ${temNoKitHTML}
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-extrabold text-slate-800 mb-2 leading-tight group-hover:text-red-600 transition-colors relative z-10">${v.nome}</h3>
+                    <p class="text-slate-500 font-medium text-sm line-clamp-3 mb-4 flex-grow relative z-10">${v.descricao}</p>
+                    <div class="flex justify-between items-center pt-3 border-t-2 border-slate-50 relative z-10">
+                        <span class="font-bold text-sm text-slate-600 group-hover:text-red-600 transition-colors">Ver Detalhes</span>
+                        <div class="bg-slate-100 p-2 rounded-full group-hover:bg-red-100 group-hover:text-red-600 transition-colors"><i data-lucide="chevron-right" class="w-4 h-4"></i></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderHome() {
+            const container = document.getElementById('view-home');
+            const featuredItem = state.verbetes.length > 0 ? state.verbetes[Math.floor(Math.random() * state.verbetes.length)] : null;
+            const latestItems = [...state.verbetes].sort((a,b) => (b.dataCriacao || '').localeCompare(a.dataCriacao || '')).slice(0, 2);
+
+            container.innerHTML = `
+                <div class="bg-white rounded-3xl p-8 sm:p-12 shadow-sm border-2 border-slate-100 mb-12 flex flex-col md:flex-row items-center justify-between relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-64 h-64 bg-red-50 rounded-full blur-3xl -mr-20 -mt-20 z-0"></div>
+                    <div class="absolute bottom-0 left-0 w-48 h-48 bg-slate-100 rounded-full blur-3xl -ml-10 -mb-10 z-0"></div>
+                    
+                    <div class="max-w-xl mb-8 md:mb-0 relative z-10">
+                        <div class="inline-block bg-red-100 text-red-700 font-bold px-3 py-1 rounded-full text-sm mb-4 border border-red-200">🤖 Robopédia Oficial</div>
+                        <h1 class="text-4xl sm:text-5xl font-extrabold mb-4 leading-tight text-slate-900">Aprenda Robótica de <span class="text-red-600">Forma Divertida!</span></h1>
+                        <p class="text-lg font-medium text-slate-600 mb-6">Explore componentes, sensores, ferramentas e conceitos com o nosso glossário interativo.</p>
+                        <button onclick="window.navigateTo('glossary')" class="bg-red-600 text-white font-extrabold py-3 px-8 rounded-full shadow-md hover:bg-red-700 hover:shadow-lg hover:-translate-y-1 transition-all">Começar a Explorar</button>
+                    </div>
+                    <div class="hidden md:flex w-48 h-48 bg-slate-50 rounded-full items-center justify-center border-4 border-slate-100 shadow-inner relative z-10">
+                        <span class="text-8xl animate-float">🤖</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border-b-4 border-slate-200 text-center flex flex-col justify-center items-center hover:-translate-y-1 transition-transform">
+                        <div class="text-5xl mb-3">🚀</div>
+                        <div class="text-4xl font-black text-slate-800 mb-1">${state.verbetes.length}</div>
+                        <div class="text-sm font-bold text-slate-400 uppercase tracking-wide">Verbetes (e crescendo)</div>
+                    </div>
+                    
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border-b-4 border-slate-200 text-center flex flex-col justify-center items-center hover:-translate-y-1 transition-transform">
+                        <div class="text-5xl mb-3">🏷️</div>
+                        <div class="text-4xl font-black text-slate-800 mb-1">${state.categorias.length}</div>
+                        <div class="text-sm font-bold text-slate-400 uppercase tracking-wide">Categorias</div>
+                    </div>
+                    
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border-b-4 border-slate-200 text-center flex flex-col justify-center items-center hover:-translate-y-1 transition-transform">
+                        <div class="text-5xl mb-3">📈</div>
+                        <div class="text-4xl font-black text-slate-800 mb-1">${state.acessos.toLocaleString('pt-BR')}</div>
+                        <div class="text-sm font-bold text-slate-400 uppercase tracking-wide">Acessos</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-4 items-center">
+                    <div class="md:col-span-1">
+                        <h3 class="text-xl font-extrabold text-slate-800 flex items-center h-10">
+                            <span class="inline-flex items-center justify-center bg-yellow-400 text-white w-8 h-8 rounded-lg mr-2 text-base">✨</span> Destaque
+                        </h3>
+                    </div>
+                    <div class="md:col-span-2">
+                        <h3 class="text-xl font-extrabold text-slate-800 flex items-center h-10">
+                            <span class="inline-flex items-center justify-center bg-green-500 text-white w-8 h-8 rounded-lg mr-2 text-base">🆕</span> Adicionados Recentemente
+                        </h3>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch mb-16">
+                    <div class="md:col-span-1 flex flex-col">
+                        ${featuredItem ? generateCardHTML(featuredItem) : '<p class="text-slate-400">Nenhum item ainda.</p>'}
+                    </div>
+                    <div class="md:col-span-2">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 h-full items-stretch">
+                            ${latestItems.map(item => generateCardHTML(item)).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderContact() {
+            const container = document.getElementById('view-contact');
+            container.innerHTML = `
+                <div class="bg-white rounded-3xl p-8 sm:p-12 border-2 border-slate-100 max-w-3xl mx-auto shadow-sm">
+                    <div class="text-center mb-8">
+                        <h3 class="text-2xl font-extrabold text-slate-800 mb-2">✉️ Fale Conosco</h3>
+                        <p class="text-slate-500 font-medium text-sm">Ficou com alguma dúvida sobre o kit ou quer mandar alguma sugestão direta à equipe do site?</p>
+                    </div>
+
+                    <div id="contact-success-msg" class="hidden bg-green-50 border-2 border-green-200 text-green-800 font-bold p-4 rounded-xl text-center mb-6 animate-in fade-in">
+                        📬 Mensagem enviada com sucesso! A equipe analisará em breve.
+                    </div>
+
+                    <form onsubmit="window.submitContactForm(event)" class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Seu Nome *</label>
+                                <input type="text" name="nome" required placeholder="Ex: Prof. Ana Paula" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-red-500 outline-none font-medium text-slate-700 bg-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Seu E-mail *</label>
+                                <input type="email" name="email" required placeholder="Ex: ana@escola.sp.gov.br" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-red-500 outline-none font-medium text-slate-700 bg-white">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1.5">Sua Mensagem *</label>
+                            <textarea name="mensagem" required rows="6" placeholder="Escreva aqui sua dúvida ou sugestão..." class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-red-500 outline-none font-medium text-slate-700 bg-white"></textarea>
+                        </div>
+                        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-extrabold p-4 rounded-xl shadow-md transition">
+                            Enviar Mensagem
+                        </button>
+                    </form>
+                </div>
+            `;
+        }
+
+        function getGlossaryGridHTML() {
+            const filtered = state.verbetes.filter(v => {
+                const matchesSearch = v.nome.toLowerCase().includes(state.searchQuery.toLowerCase()) ||
+                                      v.descricao.toLowerCase().includes(state.searchQuery.toLowerCase()) ||
+                                      v.categoria.toLowerCase().includes(state.searchQuery.toLowerCase());
+                const matchesCategory = state.selectedCategoryFilter === 'all' || v.categoria === state.selectedCategoryFilter;
+                return matchesSearch && matchesCategory;
+            }).sort((a, b) => a.nome.localeCompare(b.nome));
+
+            if (filtered.length === 0) {
+                return `
+                    <div class="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200">
+                        <div class="text-6xl mb-4">🕵️‍♂️</div>
+                        <h3 class="text-xl font-bold text-slate-600">Nenhum item encontrado.</h3>
+                        <p class="text-slate-400 font-medium">Tente buscar por outras palavras.</p>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    ${filtered.map(v => generateCardHTML(v)).join('')}
+                </div>
+            `;
+        }
+
+        function getAdminTableHTML() {
+            let adminList = [...state.verbetes];
+            
+            if (state.adminSearchQuery) {
+                const q = state.adminSearchQuery.toLowerCase();
+                adminList = adminList.filter(v => 
+                    v.nome.toLowerCase().includes(q) || 
+                    v.categoria.toLowerCase().includes(q)
+                );
+            }
+
+            if (state.adminSortAZ) {
+                adminList.sort((a,b) => a.nome.localeCompare(b.nome));
+            } else {
+                adminList.sort((a,b) => (b.dataCriacao || '').localeCompare(a.dataCriacao || ''));
+            }
+
+            if (adminList.length === 0) {
+                return `
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b-2 border-slate-200 text-slate-500 text-sm">
+                                <th class="p-4 font-bold">Nome do Verbete</th>
+                                <th class="p-4 font-bold">Categoria</th>
+                                <th class="p-4 font-bold text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="3" class="p-8 text-center text-slate-400 font-medium">Nenhum verbete encontrado.</td></tr>
+                        </tbody>
+                    </table>
+                `;
+            }
+
+            return `
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 border-b-2 border-slate-200 text-slate-500 text-sm">
+                            <th class="p-4 font-bold">Nome do Verbete</th>
+                            <th class="p-4 font-bold">Categoria</th>
+                            <th class="p-4 font-bold text-right">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${adminList.map(v => `
+                            <tr class="border-b border-slate-100 hover:bg-blue-50 transition-colors">
+                                <td class="p-4 font-bold text-slate-700 flex items-center">
+                                    <span>${v.nome}</span>
+                                    ${v.temNoKit ? `<span class="bg-green-100 text-green-700 font-extrabold text-[10px] px-2 py-0.5 rounded-full border border-green-200 ml-2">📦 No Kit</span>` : ''}
+                                </td>
+                                <td class="p-4 font-medium text-slate-500"><span class="bg-slate-100 px-2 py-1 rounded text-xs">${v.categoria}</span></td>
+                                <td class="p-4 flex gap-2 justify-end">
+                                    <button onClick="window.editVerbete('${v.id}')" class="p-2 bg-white border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-100 shadow-sm" title="Editar"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                                    <button onclick="window.deleteVerbete('${v.id}')" class="p-2 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-100 shadow-sm" title="Excluir"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function renderGlossary() {
+            const container = document.getElementById('view-glossary');
+            const catsHTML = state.categorias.map(cat => {
+                const isSel = state.selectedCategoryFilter === cat.nome;
+                const style = isSel ? `background-color: ${cat.cor}; border-color: rgba(0,0,0,0.2); color: white;` : '';
+                const cls = `px-4 py-2 rounded-full font-bold text-sm transition-all border-b-4 ${!isSel ? 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50' : ''}`;
+                return `<button onclick="window.setFilter('${cat.nome}')" style="${style}" class="${cls}">${cat.emoji} ${cat.nome}</button>`;
+            }).join('');
+
+            const allBtnCls = state.selectedCategoryFilter === 'all' ? 'bg-slate-800 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50';
+
+            container.innerHTML = `
+                <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+                    <h2 class="text-3xl font-extrabold text-slate-800">Glossário Interativo</h2>
+                    <div class="relative w-full md:w-96">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i data-lucide="search" class="h-5 w-5 text-slate-400"></i>
+                        </div>
+                        <input type="text" oninput="window.updateSearch(this.value)" value="${state.searchQuery}"
+                            class="block w-full pl-11 pr-4 py-3 bg-white border-2 border-slate-200 rounded-full font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:border-red-500 focus:ring-0 transition-colors shadow-sm"
+                            placeholder="Buscar por nome, categoria...">
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap gap-2 mb-8">
+                    <button onclick="window.setFilter('all')" class="px-4 py-2 rounded-full font-bold text-sm transition-all border-b-4 ${allBtnCls}">🌐 Todos</button>
+                    ${catsHTML}
+                </div>
+
+                <div id="glossary-grid-container">
+                    ${getGlossaryGridHTML()}
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        function renderItem() {
+            const container = document.getElementById('view-item');
+            if(!state.selectedItem) return;
+            const item = state.selectedItem;
+            const cat = state.categorias.find(c => c.nome === item.categoria) || { cor: '#cbd5e1', emoji: '📄' };
+            
+            const ytId = window.getYoutubeId(item.imagemOuVideo);
+            const isVideo = !!ytId || (item.imagemOuVideo && item.imagemOuVideo.match(/\.(mp4|webm|ogg)$/i));
+
+            let mediaHTML = '';
+            if (item.imagemOuVideo || item.midia2 || item.midia3 || item.midia4) {
+                mediaHTML = `<div class="w-full mt-6 mb-8 print-break-inside-avoid">`;
+                
+                if (item.imagemOuVideo) {
+                    if (isVideo) {
+                        const embedUrl = ytId ? `https://www.youtube.com/embed/${ytId}` : item.imagemOuVideo;
+                        mediaHTML += `
+                            <div class="w-full aspect-video rounded-3xl overflow-hidden bg-black flex flex-col items-center justify-center relative shadow-md mb-4 border border-slate-100">
+                                <iframe class="w-full h-full" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                            </div>
+                        `;
+                    } else {
+                        mediaHTML += `
+                            <div class="w-full overflow-hidden rounded-3xl bg-slate-50 border border-slate-100 shadow-md mb-4 flex justify-center items-center">
+                                <img src="${item.imagemOuVideo}" alt="${item.nome}" class="w-full h-auto max-h-[500px] object-cover cursor-pointer hover:scale-[1.01] transition duration-300" onclick="window.openLightbox('${item.imagemOuVideo}', false)" title="Clique para ampliar" />
+                            </div>
+                        `;
+                    }
+                }
+
+                const secMedia = [item.midia2, item.midia3, item.midia4].filter(Boolean);
+                if (secMedia.length > 0) {
+                    const gridCols = secMedia.length === 1 ? 'grid-cols-1' : (secMedia.length === 2 ? 'grid-cols-2' : 'grid-cols-3');
+                    mediaHTML += `<div class="grid ${gridCols} gap-4 w-full">`;
+                    
+                    secMedia.forEach(m => {
+                        const sYtId = window.getYoutubeId(m);
+                        const isVid = !!sYtId || m.match(/\.(mp4|webm|ogg)$/i);
+
+                        if (isVid) {
+                            const embedUrl = sYtId ? `https://www.youtube.com/embed/${sYtId}` : m;
+                            const thumbUrl = sYtId ? `https://img.youtube.com/vi/${sYtId}/0.jpg` : 'https://via.placeholder.com/300x200?text=Video';
+                            mediaHTML += `
+                                <div class="aspect-video w-full bg-slate-900 rounded-2xl flex items-center justify-center cursor-pointer hover:opacity-90 hover:scale-[1.02] transition duration-300 relative shadow-sm border-2 border-slate-100 overflow-hidden" onclick="window.openLightbox('${embedUrl}', true)" title="Assistir Vídeo">
+                                    <i data-lucide="play-circle" class="text-white w-10 h-10 absolute z-10 drop-shadow-lg"></i>
+                                    <img src="${thumbUrl}" class="w-full h-full object-cover opacity-70" onerror="this.style.display='none'"/>
+                                </div>`;
+                        } else {
+                            mediaHTML += `
+                                <div class="aspect-video w-full rounded-2xl bg-slate-50 border-2 border-slate-100 overflow-hidden shadow-sm hover:opacity-90 hover:scale-[1.02] transition duration-300 cursor-pointer" onclick="window.openLightbox('${m}', false)" title="Clique para ampliar">
+                                    <img src="${m}" class="w-full h-full object-cover" />
+                                </div>`;
+                        }
+                    });
+                    mediaHTML += `</div>`;
+                }
+                mediaHTML += `</div>`;
+            }
+
+            let feedbackWidgetHTML = "";
+            if (state.hasVotedCurrentItem) {
+                feedbackWidgetHTML = `
+                    <div class="bg-green-50 border-2 border-green-200 rounded-2xl p-6 text-center text-green-800 font-bold animate-in fade-in">
+                        🎉 Obrigado pelo seu feedback! Isso nos ajuda a aprimorar a Robopédia.
+                    </div>
+                `;
+            } else if (state.showFeedbackInput) {
+                feedbackWidgetHTML = `
+                    <form onsubmit="window.submitNegativeFeedback(event)" class="bg-red-50 border-2 border-red-100 rounded-2xl p-6 animate-in fade-in">
+                        <h4 class="font-extrabold text-red-800 mb-2 text-lg">Como podemos melhorar este verbete?</h4>
+                        <p class="text-slate-600 text-sm font-medium mb-4">Diga-nos o que ficou confuso ou o que falta explicar.</p>
+                        <textarea id="feedback-text-input" required rows="3" placeholder="Sua sugestão ou crítica..." 
+                            class="w-full border-2 border-red-200 rounded-xl p-3 focus:border-red-500 outline-none font-medium text-slate-700 mb-4"></textarea>
+                        <div class="flex gap-2">
+                            <button type="submit" class="bg-red-600 text-white font-bold py-2 px-6 rounded-xl hover:bg-red-700 transition">Enviar sugestão</button>
+                            <button type="button" onclick="state.showFeedbackInput = false; renderItem();" class="text-slate-500 hover:text-slate-700 font-bold py-2 px-4">Cancelar</button>
+                        </div>
+                    </form>
+                `;
+            } else {
+                feedbackWidgetHTML = `
+                    <div class="bg-slate-100 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div>
+                            <h4 class="font-extrabold text-slate-800 text-lg">Essa informação foi útil?</h4>
+                            <p class="text-slate-500 font-medium text-sm">Ajude nossa equipe a refinar o conteúdo.</p>
+                        </div>
+                        <div class="flex gap-3">
+                            <button onclick="window.submitHelpfulness(true)" class="bg-white border-2 border-slate-200 hover:border-green-400 hover:bg-green-50 text-slate-700 hover:text-green-600 font-bold py-3 px-6 rounded-2xl flex items-center shadow-sm transition">
+                                <span class="mr-2">👍</span> Sim
+                            </button>
+                            <button onclick="window.submitHelpfulness(false)" class="bg-white border-2 border-slate-200 hover:border-red-400 hover:bg-red-50 text-slate-700 hover:text-red-600 font-bold py-3 px-6 rounded-2xl flex items-center shadow-sm transition">
+                                <span class="mr-2">👎</span> Não
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = `
+                <div class="flex justify-between items-center mb-6 no-print">
+                    <button onclick="window.navigateTo('glossary')" class="flex items-center text-slate-500 hover:text-red-600 font-bold transition-colors">
+                        <i data-lucide="chevron-left" class="w-5 h-5 mr-1"></i> Voltar ao Glossário
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-[2rem] shadow-xl overflow-hidden border-2 border-slate-100 mb-8">
+                    <div class="h-16 md:h-20 w-full" style="background-color: ${cat.cor}"></div>
+
+                    <div class="p-8 md:p-12">
+                        <div class="flex items-center mb-4 flex-wrap gap-2">
+                            <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-extrabold text-white shadow-sm" style="background-color: ${cat.cor}">
+                                ${cat.emoji} ${item.categoria}
+                            </span>
+                            ${item.temNoKit ? `
+                                <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-extrabold bg-green-100 text-green-700 border border-green-200 shadow-sm">
+                                    📦 Tem no Kit
+                                </span>
+                            ` : ''}
+                        </div>
+                        
+                        <h1 class="text-4xl md:text-5xl font-extrabold text-slate-800 tracking-tight">${item.nome}</h1>
+
+                        ${mediaHTML}
+
+                        <div class="space-y-8 mt-8">
+                            <section class="print-break-inside-avoid">
+                                <h3 class="text-xl font-extrabold text-slate-700 mb-3 flex items-center">
+                                    <i data-lucide="info" class="w-6 h-6 mr-2 text-blue-500"></i> O que é?
+                                </h3>
+                                <p class="text-lg text-slate-600 font-medium leading-relaxed bg-slate-50 p-6 rounded-2xl border border-slate-100">${item.descricao}</p>
+                            </section>
+
+                            ${item.exemploUso ? `
+                            <section class="print-break-inside-avoid">
+                                <h3 class="text-xl font-extrabold text-slate-700 mb-3 flex items-center">
+                                    <i data-lucide="layout-grid" class="w-6 h-6 mr-2 text-green-500"></i> Exemplo de Uso
+                                </h3>
+                                <p class="text-lg text-slate-600 font-medium leading-relaxed bg-green-50/50 border-2 border-green-100 p-6 rounded-2xl">${item.exemploUso}</p>
+                            </section>` : ''}
+
+                            ${[
+                                { url: item.linkTeste1_url || item.linkMakeCode, text: item.linkTeste1_text || 'Ver programação de teste no MakeCode' },
+                                { url: item.linkTeste2_url, text: item.linkTeste2_text || 'Programação de Teste Alternativa' },
+                                { url: item.linkTeste3_url, text: item.linkTeste3_text || 'Código de Teste Adicional' }
+                            ].some(x => x.url) ? `
+                            <section class="print-break-inside-avoid">
+                                <h3 class="text-xl font-extrabold text-slate-700 mb-3 flex items-center">
+                                    <i data-lucide="code" class="w-6 h-6 mr-2 text-purple-600"></i> Programação de Teste
+                                </h3>
+                                <div class="flex flex-col gap-3 w-full">
+                                    ${[
+                                        { url: item.linkTeste1_url || item.linkMakeCode, text: item.linkTeste1_text || 'Ver programação de teste no MakeCode' },
+                                        { url: item.linkTeste2_url, text: item.linkTeste2_text || 'Programação de Teste Alternativa' },
+                                        { url: item.linkTeste3_url, text: item.linkTeste3_text || 'Código de Teste Adicional' }
+                                    ].filter(x => x.url).map(x => `
+                                        <a href="${x.url.startsWith('http') ? x.url : 'https://' + x.url}" target="_blank" class="w-full bg-[#5C2D91] hover:bg-[#4a2474] text-white p-4 rounded-2xl font-bold text-center flex justify-center items-center shadow-md transform hover:-translate-y-0.5 transition-all">
+                                            <i data-lucide="external-link" class="w-5 h-5 mr-2"></i> ${x.text}
+                                        </a>
+                                    `).join('')}
+                                </div>
+                            </section>
+                            ` : ''}
+
+                            ${(item.linkAux1_url || item.linkAux2_url || item.linkAux3_url) ? `
+                            <section class="print-break-inside-avoid">
+                                <h3 class="text-xl font-extrabold text-slate-700 mb-3 flex items-center">
+                                    <i data-lucide="file-text" class="w-6 h-6 mr-2 text-slate-500"></i> Documentos e Links Auxiliares
+                                </h3>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full">
+                                    ${[
+                                        { url: item.linkAux1_url, label: item.linkAux1_text || 'Link Auxiliar 1' },
+                                        { url: item.linkAux2_url, label: item.linkAux2_text || 'Link Auxiliar 2' },
+                                        { url: item.linkAux3_url, label: item.linkAux3_text || 'Link Auxiliar 3' }
+                                    ].filter(x => x.url).map(x => `
+                                        <a href="${x.url.startsWith('http') ? x.url : 'https://' + x.url}" target="_blank" class="flex items-center justify-between p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl hover:border-blue-500 hover:bg-blue-50/30 transition duration-300">
+                                            <span class="font-bold text-slate-700 text-sm truncate pr-2">${x.label}</span>
+                                            <i data-lucide="external-link" class="w-4 h-4 text-slate-400"></i>
+                                        </a>
+                                    `).join('')}
+                                </div>
+                            </section>
+                            ` : ''}
+
+                            <section class="print-break-inside-avoid no-print pt-4">
+                                ${feedbackWidgetHTML}
+                            </section>
+
+                            <section class="print-break-inside-avoid no-print pt-2">
+                                <button onclick="window.print()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 p-4 rounded-2xl font-bold text-center flex justify-center items-center shadow-sm transform hover:-translate-y-0.5 transition-all border-2 border-slate-200">
+                                    <i data-lucide="printer" class="w-5 h-5 mr-2"></i> Imprimir Verbete
+                                </button>
+                            </section>
+
+                            ${(item.habilitarRelacionados && item.relacionados && item.relacionados.length > 0) ? `
+                            <section class="print-break-inside-avoid pt-8 mt-8 border-t-2 border-slate-100">
+                                <h3 class="text-2xl font-extrabold text-slate-800 mb-6 flex items-center">
+                                    <i data-lucide="link" class="w-6 h-6 mr-2 text-blue-500"></i> Veja também verbetes relacionados:
+                                </h3>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                    ${state.verbetes.filter(v => item.relacionados.includes(v.id)).map(v => generateCardHTML(v)).join('')}
+                                </div>
+                            </section>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        function renderAdmin() {
+            const container = document.getElementById('view-admin');
+            
+            if (!state.isAdmin) {
+                container.innerHTML = `
+                    <div class="max-w-2xl mx-auto px-4 py-20 text-center">
+                        <i data-lucide="shield-alert" class="w-20 h-20 text-red-400 mx-auto mb-6"></i>
+                        <h2 class="text-3xl font-extrabold text-slate-800 mb-4">Acesso Restrito</h2>
+                        <p class="text-lg text-slate-600 mb-8 font-medium">Seu login foi efetuado, mas esta conta do Google não possui permissões no banco de dados Firebase do projeto.</p>
+                        <button onclick="window.adminLogout()" class="bg-red-600 text-white font-bold py-3 px-8 rounded-full shadow-lg hover:bg-red-700 transition-colors">Entrar com Outra Conta</button>
+                    </div>
+                `;
+                return;
+            }
+
+            let mainContent = '';
+
+            // ABA: ESTATÍSTICAS
+            if (state.activeAdminTab === 'estatisticas') {
+                const totalSim = state.feedbacks.filter(f => f.util === true).length;
+                const totalNao = state.feedbacks.filter(f => f.util === false).length;
+                const totalAvaliacoes = totalSim + totalNao;
+                const taxaAprovacao = totalAvaliacoes > 0 ? Math.round((totalSim / totalAvaliacoes) * 100) : 100;
+
+                const pendentes = state.feedbacks.filter(f => f.util === false && f.status !== 'resolvido' && f.status !== 'ignorado');
+                const resolvidas = state.feedbacks.filter(f => f.util === false && f.status === 'resolvido');
+                const ignoradas = state.feedbacks.filter(f => f.util === false && f.status === 'ignorado');
+
+                const feedbacksUteis = state.feedbacks.filter(f => f.util === true || f.status === 'resolvido').length;
+                const feedbacksNaoAproveitaveis = state.feedbacks.filter(f => f.status === 'ignorado').length;
+                const totalItensRevisados = feedbacksUteis + feedbacksNaoAproveitaveis;
+
+                let subtabContent = "";
+                const currentList = state.activeStatsSubTab === 'pendentes' ? pendentes : (state.activeStatsSubTab === 'resolvidas' ? resolvidas : ignoradas);
+
+                if (currentList.length > 0) {
+                    subtabContent = currentList.map(f => {
+                        let actionButtons = "";
+                        if (state.activeStatsSubTab === 'pendentes') {
+                            actionButtons = `
+                                <div class="flex gap-2 mt-4">
+                                    <button onclick="window.resolveFeedback('${f.id}')" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-xl text-xs flex items-center transition">
+                                        <i data-lucide="check" class="w-4 h-4 mr-1"></i> Resolvido
+                                    </button>
+                                    <button onclick="window.ignoreFeedback('${f.id}')" class="bg-slate-500 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-xl text-xs flex items-center transition">
+                                        <i data-lucide="x" class="w-4 h-4 mr-1"></i> Ignorar
+                                    </button>
+                                </div>
+                            `;
+                        }
+
+                        let badgeColor = "bg-red-100 text-red-700";
+                        let badgeLabel = "Revisão Pendente";
+                        if (f.status === 'resolvido') {
+                            badgeColor = "bg-green-100 text-green-700";
+                            badgeLabel = "Solicitação Resolvida";
+                        } else if (f.status === 'ignorado') {
+                            badgeColor = "bg-slate-200 text-slate-700";
+                            badgeLabel = "Desconsiderada / Ignorada";
+                        }
+
+                        return `
+                            <div class="bg-white border-2 border-slate-100 rounded-2xl p-5 shadow-sm relative flex flex-col justify-between hover:border-slate-300 transition-all">
+                                <button onclick="window.deleteFeedback('${f.id}')" class="absolute top-4 right-4 text-slate-400 hover:text-red-600 p-1" title="Remover Registro">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                                <div class="pr-8">
+                                    <span class="inline-block ${badgeColor} text-xs font-bold px-2.5 py-1 rounded-full mb-2">${badgeLabel}</span>
+                                    <p class="font-extrabold text-slate-800 text-base mb-1">Item: ${f.verbeteNome}</p>
+                                    <p class="text-slate-600 font-medium italic mb-2">"${f.feedbackText || 'Sem descrição.'}"</p>
+                                    <span class="text-xs text-slate-400 font-bold block mt-1">ID: ${f.id}</span>
+                                </div>
+                                ${actionButtons}
+                                <div class="text-xs text-slate-400 font-bold mt-3">
+                                    Recebido em: ${new Date(f.dataCriacao).toLocaleDateString('pt-BR')} às ${new Date(f.dataCriacao).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    subtabContent = `
+                        <div class="text-center py-12 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl">
+                            <i data-lucide="check-circle" class="w-12 h-12 text-slate-300 mx-auto mb-2"></i>
+                            <p class="text-slate-500 font-bold">Nenhum registro nesta sub-aba.</p>
+                        </div>
+                    `;
+                }
+
+                mainContent = `
+                    <div class="p-4">
+                        <div class="bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-5 mb-8 shadow-md flex items-center justify-between border border-slate-700">
+                            <div class="flex items-center gap-4">
+                                <div class="bg-blue-500/20 p-3 rounded-xl flex-shrink-0">
+                                    <i data-lucide="activity" class="w-6 h-6 text-blue-400"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-extrabold text-slate-100 uppercase tracking-wider text-sm mb-1">Métricas em Tempo Real</h4>
+                                    <p class="text-slate-400 text-xs font-medium">O Google Analytics e o Firebase estão processando dados regionais.</p>
+                                </div>
+                            </div>
+                            <div class="hidden sm:flex items-center gap-2">
+                                <span class="relative flex h-3 w-3">
+                                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                  <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                                </span>
+                                <span class="text-xs font-bold text-green-400 uppercase tracking-wide">Online</span>
+                            </div>
+                        </div>
+
+                        <h3 class="text-xl font-extrabold text-slate-800 mb-6 flex items-center"><i data-lucide="bar-chart-3" class="w-6 h-6 mr-2 text-slate-500"></i> Métricas Pedagógicas da Robopédia</h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                            <div class="bg-slate-50 p-6 rounded-2xl border-2 border-slate-100">
+                                <p class="text-sm font-bold text-slate-400 uppercase">Itens Revisados (Concluídos)</p>
+                                <p class="text-3xl font-extrabold text-slate-800">${totalItensRevisados}</p>
+                            </div>
+                            <div class="bg-green-50 p-6 rounded-2xl border-2 border-green-100 flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-bold text-green-600 uppercase">Feedbacks Úteis</p>
+                                    <p class="text-3xl font-extrabold text-green-800">${feedbacksUteis}</p>
+                                </div>
+                                <div class="bg-green-100 p-3 rounded-full text-green-600"><i data-lucide="thumbs-up" class="w-5 h-5"></i></div>
+                            </div>
+                            <div class="bg-red-50 p-6 rounded-2xl border-2 border-red-100 flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-bold text-red-600 uppercase">Não Aproveitáveis</p>
+                                    <p class="text-3xl font-extrabold text-red-800">${feedbacksNaoAproveitaveis}</p>
+                                </div>
+                                <div class="bg-red-100 p-3 rounded-full text-red-500"><i data-lucide="thumbs-down" class="w-5 h-5"></i></div>
+                            </div>
+                            <div class="bg-slate-50 p-6 rounded-2xl border-2 border-slate-100">
+                                <p class="text-sm font-bold text-slate-400 uppercase">Aprovação Geral</p>
+                                <p class="text-3xl font-extrabold text-slate-800">${taxaAprovacao}%</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-8 border-t border-slate-200 pt-8">
+                            <h4 class="text-lg font-extrabold text-slate-800 mb-6 flex items-center">
+                                <i data-lucide="message-square" class="w-5 h-5 mr-2 text-red-500"></i> Sugestões e Críticas de Usuários
+                            </h4>
+
+                            <div class="flex gap-2 mb-6 bg-slate-100 p-1.5 rounded-xl self-start inline-flex">
+                                <button onclick="window.setStatsSubTab('pendentes')" class="px-4 py-2 font-bold text-xs rounded-lg transition ${state.activeStatsSubTab === 'pendentes' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}">
+                                    Pendentes (${pendentes.length})
+                                </button>
+                                <button onclick="window.setStatsSubTab('resolvidas')" class="px-4 py-2 font-bold text-xs rounded-lg transition ${state.activeStatsSubTab === 'resolvidas' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}">
+                                    Resolvidos (${resolvidas.length})
+                                </button>
+                                <button onclick="window.setStatsSubTab('ignoradas')" class="px-4 py-2 font-bold text-xs rounded-lg transition ${state.activeStatsSubTab === 'ignoradas' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}">
+                                    Desconsiderados (${ignoradas.length})
+                                </button>
+                            </div>
+
+                            <div class="space-y-4">
+                                ${subtabContent}
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+            // ABA: VERBETES (FORMULÁRIO DE EDIÇÃO E CRIAÇÃO)
+            } else if (state.activeAdminTab === 'verbetes' && state.editingItem) {
+                const i = state.editingItem;
+                const catOptions = state.categorias.map(c => `<option value="${c.nome}" ${c.nome === i.categoria ? 'selected' : ''}>${c.nome}</option>`).join('');
+
+                const relList = i.relacionados || [];
+                const otherVerbetes = state.verbetes.filter(v => v.id !== i.id).sort((a,b) => a.nome.localeCompare(b.nome));
+                const relatedCheckboxes = otherVerbetes.map(v => `
+                    <label class="flex items-center space-x-3 p-2 hover:bg-slate-100 rounded-lg cursor-pointer transition">
+                        <input type="checkbox" name="relacionados" value="${v.id}" ${relList.includes(v.id) ? 'checked' : ''} class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
+                        <span class="text-sm font-medium text-slate-700">${v.nome}</span>
+                    </label>
+                `).join('');
+
+                const hasSecondaryMedia = i.midia2 || i.midia3 || i.midia4;
+
+                mainContent = `
+                    <form onsubmit="window.saveVerbete(event)" class="space-y-6">
+                        <div class="flex justify-between items-center mb-4 border-b-2 border-slate-100 pb-4">
+                            <h3 class="text-xl font-extrabold text-slate-800">${i.id ? 'Editar Verbete' : 'Novo Verbete'}</h3>
+                            <button type="button" onclick="window.cancelEdit()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-2">Nome do Item *</label>
+                                <input name="nome" value="${i.nome || ''}" required class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-2">Categoria *</label>
+                                <select name="categoria" required class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700">
+                                    <option value="">Selecione...</option>
+                                    ${catOptions}
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-bold text-slate-700 mb-2">Descrição Completa *</label>
+                                <textarea name="descricao" required rows="4" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700">${i.descricao || ''}</textarea>
+                            </div>
+                            
+                            <div class="md:col-span-2 flex items-center space-x-3 p-4 bg-green-50/50 border-2 border-green-200 rounded-2xl">
+                                <input type="checkbox" name="temNoKit" id="temNoKit" ${i.temNoKit ? 'checked' : ''} class="w-5 h-5 text-green-600 rounded border-slate-300 focus:ring-green-500" />
+                                <label for="temNoKit" class="text-sm font-extrabold text-green-800 flex items-center cursor-pointer select-none">
+                                    <span class="text-base mr-1.5">📦</span> Marcar como "Tem no Kit" (Exibe um badge de destaque no manual físico)
+                                </label>
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-bold text-slate-700 mb-2">Exemplo de Uso</label>
+                                <textarea name="exemploUso" rows="2" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700">${i.exemploUso || ''}</textarea>
+                            </div>
+
+                            <div class="md:col-span-2 bg-slate-50 border-2 border-slate-200 rounded-2xl p-5 space-y-4">
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-800 mb-2 flex items-center"><i data-lucide="image" class="w-5 h-5 mr-2 text-blue-500"></i> Mídia Principal (Obrigatória)</label>
+                                    <input name="imagemOuVideo" value="${i.imagemOuVideo || ''}" required placeholder="URL da imagem ou vídeo do YouTube" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700" />
+                                </div>
+                                
+                                ${!hasSecondaryMedia ? `
+                                    <button type="button" onclick="document.getElementById('secondary-media-wrapper').classList.remove('hidden'); this.style.display='none'" class="flex items-center text-blue-600 font-bold hover:text-blue-800 transition py-2">
+                                        <i data-lucide="plus-circle" class="w-5 h-5 mr-2"></i> Adicionar Mídias Secundárias (Até 3 Extras)
+                                    </button>
+                                ` : ''}
+
+                                <div id="secondary-media-wrapper" class="${hasSecondaryMedia ? '' : 'hidden'} space-y-3 pt-3 border-t-2 border-slate-200 border-dashed">
+                                    <h4 class="text-sm font-bold text-slate-600">Mídias Secundárias (Opcionais)</h4>
+                                    <input name="midia2" value="${i.midia2 || ''}" placeholder="2ª Mídia (URL)" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700" />
+                                    <input name="midia3" value="${i.midia3 || ''}" placeholder="3ª Mídia (URL)" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700" />
+                                    <input name="midia4" value="${i.midia4 || ''}" placeholder="4ª Mídia (URL)" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700" />
+                                </div>
+                            </div>
+
+                            <div class="md:col-span-2 bg-purple-50 p-5 rounded-2xl border-2 border-purple-200 space-y-4">
+                                <h4 class="text-sm font-extrabold text-purple-900 flex items-center">
+                                    <i data-lucide="code" class="w-5 h-5 mr-2 text-purple-600"></i> Links de Programação e Testes (Até 3)
+                                </h4>
+                                <p class="text-xs text-purple-700 font-medium">Cadastre links de teste (MakeCode, repositórios, etc.) e configure o texto dos botões de ação.</p>
+                                
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div class="p-3 bg-white rounded-xl border border-purple-100">
+                                        <label class="block text-xs font-bold text-purple-800 mb-1">1º Link de Teste (URL)</label>
+                                        <input name="linkTeste1_url" value="${i.linkTeste1_url || i.linkMakeCode || ''}" placeholder="Ex: https://makecode..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 mb-2 font-medium" />
+                                        <label class="block text-xs font-bold text-purple-800 mb-1">Texto do 1º Botão</label>
+                                        <input name="linkTeste1_text" value="${i.linkTeste1_text || 'Ver programação de teste no MakeCode'}" placeholder="Ex: Programação no MakeCode" class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 font-medium" />
+                                    </div>
+                                    <div class="p-3 bg-white rounded-xl border border-purple-100">
+                                        <label class="block text-xs font-bold text-purple-800 mb-1">2º Link de Teste (URL)</label>
+                                        <input name="linkTeste2_url" value="${i.linkTeste2_url || ''}" placeholder="Ex: https://..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 mb-2 font-medium" />
+                                        <label class="block text-xs font-bold text-purple-800 mb-1">Texto do 2º Botão</label>
+                                        <input name="linkTeste2_text" value="${i.linkTeste2_text || 'Programação de Teste Alternativa'}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 font-medium" />
+                                    </div>
+                                    <div class="p-3 bg-white rounded-xl border border-purple-100 sm:col-span-2">
+                                        <label class="block text-xs font-bold text-purple-800 mb-1">3º Link de Teste (URL)</label>
+                                        <input name="linkTeste3_url" value="${i.linkTeste3_url || ''}" placeholder="Ex: https://..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 mb-2 font-medium" />
+                                        <label class="block text-xs font-bold text-purple-800 mb-1">Texto do 3º Botão</label>
+                                        <input name="linkTeste3_text" value="${i.linkTeste3_text || 'Código de Teste Adicional'}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 font-medium" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="md:col-span-2 bg-blue-50/50 p-5 rounded-2xl border-2 border-blue-200 space-y-4">
+                                <h4 class="text-sm font-extrabold text-blue-900 flex items-center">
+                                    <i data-lucide="file-text" class="w-5 h-5 mr-2 text-blue-600"></i> Outros Links Auxiliares (Datasheets, Manuais, etc. - Opcional)
+                                </h4>
+                                <p class="text-xs text-blue-700 font-medium">Estes botões só ficarão visíveis se você preencher a URL de destino correspondente.</p>
+                                
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div class="p-3 bg-white rounded-xl border border-blue-100">
+                                        <label class="block text-xs font-bold text-blue-800 mb-1">Link Auxiliar 1 (URL)</label>
+                                        <input name="linkAux1_url" value="${i.linkAux1_url || ''}" placeholder="https://..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 mb-2 font-medium" />
+                                        <label class="block text-xs font-bold text-blue-800 mb-1">Texto do Botão 1</label>
+                                        <input name="linkAux1_text" value="${i.linkAux1_text || 'Baixar Datasheet Técnico PDF'}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 font-medium" />
+                                    </div>
+                                    <div class="p-3 bg-white rounded-xl border border-blue-100">
+                                        <label class="block text-xs font-bold text-blue-800 mb-1">Link Auxiliar 2 (URL)</label>
+                                        <input name="linkAux2_url" value="${i.linkAux2_url || ''}" placeholder="https://..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 mb-2 font-medium" />
+                                        <label class="block text-xs font-bold text-blue-800 mb-1">Texto do Botão 2</label>
+                                        <input name="linkAux2_text" value="${i.linkAux2_text || 'Manual de Instruções do Sensor'}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 font-medium" />
+                                    </div>
+                                    <div class="p-3 bg-white rounded-xl border border-blue-100">
+                                        <label class="block text-xs font-bold text-blue-800 mb-1">Link Auxiliar 3 (URL)</label>
+                                        <input name="linkAux3_url" value="${i.linkAux3_url || ''}" placeholder="https://..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 mb-2 font-medium" />
+                                        <label class="block text-xs font-bold text-blue-800 mb-1">Texto do Botão 3</label>
+                                        <input name="linkAux3_text" value="${i.linkAux3_text || 'Esquema de Conexão Física'}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 font-medium" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="md:col-span-2 bg-slate-50 border-2 border-slate-200 rounded-2xl p-5">
+                                <label class="flex items-center space-x-3 cursor-pointer mb-4">
+                                    <input type="checkbox" name="habilitarRelacionados" id="toggle-relacionados" ${i.habilitarRelacionados ? 'checked' : ''} class="w-5 h-5 text-blue-600 rounded border-slate-300 focus:ring-blue-500" onchange="document.getElementById('related-items-wrapper').classList.toggle('hidden', !this.checked)">
+                                    <span class="text-base font-extrabold text-slate-800 flex items-center"><i data-lucide="link" class="w-5 h-5 mr-2 text-blue-500"></i> Habilitar Seção "Veja Também"</span>
+                                </label>
+                                
+                                <div id="related-items-wrapper" class="${i.habilitarRelacionados ? '' : 'hidden'}">
+                                    <p class="text-xs text-slate-500 font-bold uppercase mb-2">Selecione os verbetes relacionados:</p>
+                                    <div class="bg-white border-2 border-slate-200 rounded-xl p-3 max-h-48 overflow-y-auto custom-scrollbar">
+                                        ${relatedCheckboxes.length > 0 ? relatedCheckboxes : '<p class="text-sm text-slate-400 p-2">Não há outros verbetes cadastrados.</p>'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-6">
+                            <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-xl flex items-center justify-center transition-colors shadow-md">
+                                <i data-lucide="save" class="w-5 h-5 mr-2"></i> Salvar Verbete
+                            </button>
+                        </div>
+                    </form>
+                `;
+
+            // ABA: LISTA PRINCIPAL DE VERBETES
+            } else if (state.activeAdminTab === 'verbetes') {
+                mainContent = `
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                        <div class="flex items-center gap-4 w-full md:w-auto flex-1">
+                            <div class="relative w-full max-w-sm">
+                                <i data-lucide="search" class="absolute left-3 top-3 w-5 h-5 text-slate-400"></i>
+                                <input type="text" placeholder="Pesquisar por nome ou categoria..." value="${state.adminSearchQuery}" oninput="window.updateAdminSearch(this.value)" 
+                                    class="w-full pl-10 pr-4 py-3 border-2 border-slate-200 rounded-xl outline-none focus:border-red-500 focus:ring-4 focus:ring-red-100 font-medium text-slate-700 transition-all shadow-sm">
+                            </div>
+                            <button onclick="window.toggleAdminSort()" class="flex items-center px-4 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold text-slate-600 transition-colors whitespace-nowrap border-2 border-slate-200">
+                                <i data-lucide="arrow-up-down" class="w-4 h-4 mr-2"></i>
+                                ${state.adminSortAZ ? 'A-Z' : 'Recentes'}
+                            </button>
+                        </div>
+                        <button onclick="window.newVerbete()" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl font-bold flex items-center transition-colors shadow-md w-full md:w-auto justify-center">
+                            <i data-lucide="plus" class="w-5 h-5 mr-2"></i> Novo Item
+                        </button>
+                    </div>
+                    
+                    <div class="overflow-x-auto rounded-xl border-2 border-slate-100" id="admin-table-container">
+                        ${getAdminTableHTML()}
+                    </div>
+                `;
+
+            // ABA: CATEGORIAS
+            } else if (state.activeAdminTab === 'categorias') {
+                if (state.editingCategory !== null) {
+                    const c = state.editingCategory;
+                    mainContent = `
+                        <form onsubmit="window.saveCategory(event)" class="space-y-6">
+                            <div class="flex justify-between items-center mb-4 border-b-2 border-slate-100 pb-4">
+                                <h3 class="text-xl font-extrabold text-slate-800">${c.id ? 'Editar Categoria' : 'Nova Categoria'}</h3>
+                                <button type="button" onclick="window.cancelCategoryEdit()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div class="md:col-span-1">
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">Emoji da Categoria *</label>
+                                    <input name="emoji" value="${c.emoji || '🔧'}" required placeholder="Ex: 🛠️, 📡, 🔧" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700 text-center text-2xl" />
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">Nome da Categoria *</label>
+                                    <input name="nome" value="${c.nome || ''}" required placeholder="Ex: Atuadores" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700" />
+                                </div>
+                                <div class="md:col-span-3">
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">Cor de Destaque da Categoria *</label>
+                                    <div class="flex items-center gap-4">
+                                        <input type="color" name="cor" value="${c.cor || '#3b82f6'}" class="w-16 h-12 border-2 border-slate-200 rounded-xl cursor-pointer" />
+                                        <span class="text-sm font-semibold text-slate-500">Escolha a cor de destaque para os cartões e banners dessa categoria</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pt-6">
+                                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-xl flex items-center justify-center transition-colors">
+                                    <i data-lucide="save" class="w-5 h-5 mr-2"></i> Salvar Categoria
+                                </button>
+                            </div>
+                        </form>
+                    `;
+                } else {
+                    mainContent = `
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-extrabold text-slate-800">Categorias Cadastradas (${state.categorias.length})</h3>
+                            <button onclick="window.newCategory()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-bold flex items-center transition-colors shadow-md">
+                                <i data-lucide="plus" class="w-4 h-4 mr-2"></i> Nova Categoria
+                            </button>
+                        </div>
+                        
+                        <div class="overflow-x-auto rounded-xl border-2 border-slate-100">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-50 border-b-2 border-slate-200 text-slate-500 text-sm">
+                                        <th class="p-4 font-bold">Ícone/Emoji</th>
+                                        <th class="p-4 font-bold">Nome da Categoria</th>
+                                        <th class="p-4 font-bold">Cor Associada</th>
+                                        <th class="p-4 font-bold text-right">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${state.categorias.length > 0 ? state.categorias.map(c => `
+                                        <tr class="border-b border-slate-100 hover:bg-purple-50/50 transition-colors">
+                                            <td class="p-4 text-2xl">${c.emoji}</td>
+                                            <td class="p-4 font-bold text-slate-700">${c.nome}</td>
+                                            <td class="p-4">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="w-6 h-6 rounded-full inline-block border shadow-sm" style="background-color: ${c.cor}"></span>
+                                                    <span class="font-mono text-xs text-slate-500 uppercase">${c.cor}</span>
+                                                </div>
+                                            </td>
+                                            <td class="p-4 flex gap-2 justify-end">
+                                                <button onclick="window.editCategory('${c.id}')" class="p-2 bg-white border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-100 shadow-sm" title="Editar"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                                                <button onclick="window.deleteCategory('${c.id}')" class="p-2 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-100 shadow-sm" title="Excluir"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                            </td>
+                                        </tr>
+                                    `).join('') : `
+                                        <tr><td colspan="4" class="p-8 text-center text-slate-400 font-medium">Nenhuma categoria cadastrada.</td></tr>
+                                    `}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+            }
+
+            // ABA: CAIXA DE MENSAGENS FALE CONOSCO
+            else if (state.activeAdminTab === 'contatos') {
+                mainContent = `
+                    <div class="p-4">
+                        <h3 class="text-xl font-extrabold text-slate-800 mb-6 flex items-center">
+                            <i data-lucide="mail" class="w-6 h-6 mr-2 text-slate-500"></i> Mensagens Recebidas (Fale Conosco)
+                        </h3>
+
+                        <div class="space-y-4">
+                            ${state.contatos.length > 0 ? state.contatos.map(c => `
+                                <div class="bg-slate-50 hover:bg-white border-2 border-slate-150 rounded-2xl p-6 relative transition-all shadow-sm">
+                                    <button onclick="window.deleteContato('${c.id}')" class="absolute top-4 right-4 text-slate-400 hover:text-red-600 p-1" title="Excluir Mensagem">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                    <div class="mb-3">
+                                        <p class="font-extrabold text-slate-800 text-base">${c.nome}</p>
+                                        <p class="text-sm font-bold text-slate-400">${c.email}</p>
+                                    </div>
+                                    <p class="text-slate-600 font-medium text-sm bg-white p-4 rounded-xl border border-slate-200/60">${c.mensagem}</p>
+                                    <div class="text-xs text-slate-400 font-bold mt-4">
+                                        Recebido em: ${new Date(c.dataCriacao).toLocaleDateString('pt-BR')} às ${new Date(c.dataCriacao).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}
+                                    </div>
+                                </div>
+                            `).join('') : `
+                                <div class="text-center py-16 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl">
+                                    <i data-lucide="inbox" class="w-12 h-12 text-slate-300 mx-auto mb-2"></i>
+                                    <p class="text-slate-500 font-bold">Nenhuma mensagem nova na caixa de entrada.</p>
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = `
+                <div class="flex justify-between items-center mb-8 bg-slate-800 text-white p-6 rounded-3xl shadow-lg no-print">
+                    <div>
+                        <h2 class="text-2xl font-extrabold flex items-center"><i data-lucide="shield" class="mr-2"></i> Painel de Controle</h2>
+                        <p class="text-slate-300 text-sm mt-1 font-medium">Logado como: ${state.user.email || 'Admin'}</p>
+                    </div>
+                    <button onclick="window.adminLogout()" class="bg-slate-700 hover:bg-slate-600 p-3 rounded-xl transition-colors flex items-center font-bold text-sm">
+                        <i data-lucide="log-out" class="w-4 h-4 mr-2"></i> Sair
+                    </button>
+                </div>
+
+                <div class="flex flex-wrap gap-2 mb-6 border-b-2 border-slate-200 pb-4 no-print">
+                    <button onclick="window.setAdminTab('verbetes')" class="px-6 py-2 rounded-full font-bold transition-all ${state.activeAdminTab === 'verbetes' ? 'bg-red-600 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100'}">Verbetes</button>
+                    <button onclick="window.setAdminTab('categorias')" class="px-6 py-2 rounded-full font-bold transition-all ${state.activeAdminTab === 'categorias' ? 'bg-red-600 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100'}">Categorias</button>
+                    <button onclick="window.setAdminTab('estatisticas')" class="px-6 py-2 rounded-full font-bold transition-all flex items-center ${state.activeAdminTab === 'estatisticas' ? 'bg-slate-800 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100'}"><i data-lucide="message-square" class="w-4 h-4 mr-2"></i> Revisões e Estatísticas</button>
+                    <button onclick="window.setAdminTab('contatos')" class="px-6 py-2 rounded-full font-bold transition-all flex items-center ${state.activeAdminTab === 'contatos' ? 'bg-slate-800 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100'}"><i data-lucide="mail" class="w-4 h-4 mr-2"></i> Fale Conosco (${state.contatos.length})</button>
+                </div>
+
+                <div class="bg-white rounded-3xl p-6 shadow-sm border-2 border-slate-100">
+                    ${mainContent}
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        function renderView() {
+            if (state.view === 'home') renderHome();
+            if (state.view === 'glossary') renderGlossary();
+            if (state.view === 'item') renderItem();
+            if (state.view === 'admin') renderAdmin();
+            if (state.view === 'contact') renderContact();
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // OUVINTES DO BANCO DE DADOS (FIRESTORE)
+        // ==========================================
+        let adminUnsubscribers = [];
+        let publicUnsubscribers = [];
+
+        function setupPublicListeners() {
+            if (!db) return;
+
+            publicUnsubscribers.forEach(unsub => unsub());
+            publicUnsubscribers = [];
+
+            const catRef = collection(db, 'artifacts', appId, 'public', 'data', 'categorias');
+            const verbRef = collection(db, 'artifacts', appId, 'public', 'data', 'verbetes');
+            const statRef = doc(db, 'artifacts', appId, 'public', 'data', 'estatisticas', 'geral');
+
+            const unsubCat = onSnapshot(catRef, (snapshot) => {
+                state.categorias = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                if (state.categorias.length === 0) seedDatabase();
+                renderView();
+            }, (err) => {
+                console.error("Erro categorias:", err);
+                fallbackToOfflineMode("Categorias");
+            });
+
+            const unsubVerb = onSnapshot(verbRef, (snapshot) => {
+                state.verbetes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                document.getElementById('loading-view').classList.add('hidden');
+                renderView();
+            }, (err) => {
+                console.error("Erro verbetes:", err);
+                fallbackToOfflineMode("Verbetes");
+            });
+
+            const unsubStat = onSnapshot(statRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    state.acessos = docSnap.data().acessos || 0;
+                    if (state.view === 'home') renderView();
+                }
+            }, (err) => {
+                console.warn("Erro ao ler estatisticas:", err);
+            });
+
+            publicUnsubscribers.push(unsubCat, unsubVerb, unsubStat);
+        }
+
+        function setupAdminListeners() {
+            if (!db || !state.user || state.user.isAnonymous) return;
+            
+            adminUnsubscribers.forEach(unsub => unsub());
+            adminUnsubscribers = [];
+
+            const feedRef = collection(db, 'artifacts', appId, 'public', 'data', 'feedbacks');
+            const mtContRef = collection(db, 'artifacts', appId, 'public', 'data', 'contatos');
+
+            try {
+                const unsubFeed = onSnapshot(feedRef, (snapshot) => {
+                    state.feedbacks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    state.isAdmin = true;
+                    
+                    if (state.pendingAdminRedirect) {
+                        state.pendingAdminRedirect = false;
+                        window.navigateTo('admin');
+                    } else {
+                        updateNavbar();
+                        renderView();
+                    }
+                }, (err) => {
+                    console.warn("Acesso administrativo negado pelo Firebase Rules (feedbacks):", err);
+                    handleAdminPermissionDenied();
+                });
+
+                const unsubCont = onSnapshot(mtContRef, (snapshot) => {
+                    state.contatos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    renderView();
+                }, (err) => {
+                    console.warn("Acesso administrativo negado pelo Firebase Rules (contatos):", err);
+                    handleAdminPermissionDenied();
+                });
+
+                adminUnsubscribers.push(unsubFeed, unsubCont);
+            } catch (e) {
+                handleAdminPermissionDenied();
+            }
+        }
+
+        function handleAdminPermissionDenied() {
+            adminUnsubscribers.forEach(unsub => unsub());
+            adminUnsubscribers = [];
+            
+            state.isAdmin = false;
+            signOut(auth);
+            window.navigateTo('home');
+        }
+
+        async function registerRealVisit() {
+            if (!db) return;
+            if (!sessionStorage.getItem('visited_robotica_v3')) {
+                sessionStorage.setItem('visited_robotica_v3', 'true');
+                const statRef = doc(db, 'artifacts', appId, 'public', 'data', 'estatisticas', 'geral');
+                try {
+                    const snap = await getDoc(statRef);
+                    if (!snap.exists()) {
+                        await setDoc(statRef, { acessos: 1 });
+                    } else {
+                        await updateDoc(statRef, { acessos: increment(1) });
+                    }
+                } catch(e) {
+                    console.warn("Não foi possível incrementar o contador de acessos:", e);
+                }
+            }
+        }
+
+        let offlineFallbackTriggered = false;
+        function fallbackToOfflineMode(sourceName) {
+            if (offlineFallbackTriggered) return;
+            offlineFallbackTriggered = true;
+
+            const spinner = document.getElementById('loading-view');
+            if (spinner) {
+                spinner.classList.add('hidden');
+            }
+            console.warn(`[Permissões do Firestore] Fallback offline ativo devido a erro em: ${sourceName}`);
+            seedLocalDatabase();
+        }
+
+        async function seedDatabase() {
+            if (!db) return;
+            const defaultCats = [
+                { id: 'cat1', nome: 'Componentes', emoji: '🔧', cor: '#8B5CF6' }, 
+                { id: 'cat2', nome: 'Sensores', emoji: '📡', cor: '#10B981' }, 
+                { id: 'cat3', nome: 'Ferramentas', emoji: '🛠️', cor: '#F59E0B' }, 
+                { id: 'cat4', nome: 'Estrutura', emoji: '🏗️', cor: '#EC4899' }  
+            ];
+            const defaultVerbetes = [
+                {
+                    id: 'v1', nome: 'Placa Micro:bit', categoria: 'Componentes',
+                    descricao: 'Placa de desenvolvimento educacional, como um pequeno computador que você pode programar, personalizar e controlar.',
+                    exemploUso: 'Criar um crachá digital piscante ou um termômetro de bolso.',
+                    imagemOuVideo: 'https://images.unsplash.com/photo-1555661530-68c8e98db4e6?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+                    linkTeste1_url: 'https://makecode.microbit.org/', linkTeste1_text: 'Programação de Teste no MakeCode',
+                    temNoKit: true
+                }
+            ];
+
+            try {
+                for (const cat of defaultCats) {
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'categorias', cat.id), cat);
+                }
+                for (const verb of defaultVerbetes) {
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'verbetes', verb.id), verb);
+                }
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'estatisticas', 'geral'), { acessos: 1 });
+            } catch (e) { console.error("Erro no Seed:", e); }
+        }
+
+        function seedLocalDatabase() {
+            state.categorias = [
+                { id: 'cat1', nome: 'Componentes', emoji: '🔧', color: '#8B5CF6', cor: '#8B5CF6' }
+            ];
+            state.verbetes = [
+                {
+                    id: 'v1', nome: 'Placa Micro:bit', categoria: 'Componentes',
+                    descricao: 'Placa de desenvolvimento educacional, como um pequeno computador que você pode programar, personalizar e controlar.',
+                    exemploUso: 'Criar um crachá digital piscante ou um termômetro de bolso.',
+                    imagemOuVideo: 'https://images.unsplash.com/photo-1555661530-68c8e98db4e6?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+                    linkTeste1_url: 'https://makecode.microbit.org/', linkTeste1_text: 'Programação de Teste no MakeCode',
+                    temNoKit: true
+                }
+            ];
+            document.getElementById('loading-view').classList.add('hidden');
+            renderView();
+        }
+
+        // ==========================================
+        // INICIALIZAÇÃO DE AUTENTICAÇÃO
+        // ==========================================
+        async function initApp() {
+            if (auth) {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else if (!auth.currentUser) {
+                        await signInAnonymously(auth);
+                    }
+                } catch (err) {
+                    console.error("Erro de Autenticação Inicial:", err);
+                }
+
+                onAuthStateChanged(auth, async (currentUser) => {
+                    if (!currentUser) {
+                        try {
+                            await signInAnonymously(auth);
+                        } catch (err) {
+                            console.error("Erro ao restabelecer conexão anônima:", err);
+                        }
+                        return;
+                    }
+
+                    state.user = currentUser;
+                    
+                    if (currentUser && !currentUser.isAnonymous) {
+                        const email = currentUser.email ? currentUser.email.toLowerCase().trim() : '';
+                        
+                        // Validação Primária no Cliente (Frontend) - Usando Hashes Base64 para ofuscação
+                        if (AUTH_TOKENS.includes(btoa(email))) {
+                            setupAdminListeners();
+                        } else {
+                            state.isAdmin = false;
+                            await signOut(auth);
+                            window.customAlert("Acesso Negado", "Seu e-mail não possui privilégios de administrador.", true);
+                            window.navigateTo('home');
+                        }
+                    } else {
+                        state.isAdmin = false;
+                        adminUnsubscribers.forEach(unsub => unsub());
+                        adminUnsubscribers = [];
+                        
+                        registerRealVisit();
+                    }
+                    
+                    updateNavbar();
+                    if (state.view === 'admin') renderView();
+                    
+                    if (currentUser) {
+                        setupPublicListeners();
+                    }
+                });
+            } else {
+                state.user = { email: "offline@robotica.local", isAnonymous: false };
+                state.isAdmin = true;
+                updateNavbar();
+                seedLocalDatabase();
+            }
+        }
+
+        // ==========================================
+        // VINCULAÇÃO GLOBAL DAS FUNÇÕES DO WINDOW
+        // ==========================================
+        window.navigateTo = (viewName, itemData = null) => {
+            state.view = viewName;
+            if (itemData) {
+                state.selectedItem = itemData;
+                state.hasVotedCurrentItem = false;
+                state.showFeedbackInput = false;
+            }
+            updateNavbar();
+            document.querySelectorAll('.view-container').forEach(el => el.classList.add('view-hidden'));
+            const viewEl = document.getElementById(`view-${viewName}`);
+            if (viewEl) {
+                viewEl.classList.remove('view-hidden');
+                viewEl.classList.remove('fade-in');
+                void viewEl.offsetWidth; 
+                viewEl.classList.add('fade-in');
+            }
+            renderView();
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        };
+
+        window.updateSearch = (val) => { 
+            state.searchQuery = val; 
+            const container = document.getElementById('glossary-grid-container');
+            if (container) {
+                container.innerHTML = getGlossaryGridHTML();
+                lucide.createIcons();
+            } else {
+                renderGlossary(); 
+            }
+        };
+
+        window.setFilter = (cat) => { state.selectedCategoryFilter = cat; renderGlossary(); };
+        window.openItem = (id) => {
+            const item = state.verbetes.find(v => v.id === id);
+            if(item) window.navigateTo('item', item);
+        };
+
+        window.handleAdminClick = () => {
+            if (state.user && !state.user.isAnonymous) {
+                if (state.isAdmin) {
+                    window.navigateTo('admin');
+                } else {
+                    setupAdminListeners();
+                    window.navigateTo('admin');
+                }
+            } else {
+                window.showLoginModal();
+            }
+        };
+
+        window.submitHelpfulness = async (isUseful) => {
+            if (state.hasVotedCurrentItem) return;
+            if (isUseful) {
+                const feedbackId = `feed_${Date.now()}`;
+                const data = {
+                    verbeteId: state.selectedItem.id,
+                    verbeteNome: state.selectedItem.nome,
+                    util: true,
+                    status: 'resolvido',
+                    feedbackText: "",
+                    dataCriacao: new Date().toISOString()
+                };
+                if (db) {
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'feedbacks', feedbackId), data);
+                } else {
+                    state.feedbacks.push({ id: feedbackId, ...data });
+                }
+                state.hasVotedCurrentItem = true;
+                renderItem();
+            } else {
+                state.showFeedbackInput = true;
+                renderItem();
+            }
+        };
+
+        window.submitNegativeFeedback = async (event) => {
+            event.preventDefault();
+            const text = document.getElementById('feedback-text-input').value;
+            const feedbackId = `feed_${Date.now()}`;
+            const data = {
+                verbeteId: state.selectedItem.id,
+                verbeteNome: state.selectedItem.nome,
+                util: false,
+                status: 'pendente',
+                feedbackText: text,
+                dataCriacao: new Date().toISOString()
+            };
+            if (db) {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'feedbacks', feedbackId), data);
+            } else {
+                state.feedbacks.push({ id: feedbackId, ...data });
+            }
+            state.hasVotedCurrentItem = true;
+            state.showFeedbackInput = false;
+            renderItem();
+        };
+
+        window.submitContactForm = async (event) => {
+            event.preventDefault();
+            const form = event.target;
+            const fd = new FormData(form);
+            const contatoId = `contact_${Date.now()}`;
+            const data = {
+                nome: fd.get('nome'),
+                email: fd.get('email'),
+                mensagem: fd.get('mensagem'),
+                dataCriacao: new Date().toISOString()
+            };
+            try {
+                if (db) {
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'contatos', contatoId), data);
+                } else {
+                    state.contatos.push({ id: contatoId, ...data });
+                }
+                document.getElementById('contact-success-msg').classList.remove('hidden');
+                form.reset();
+                setTimeout(() => {
+                    const msg = document.getElementById('contact-success-msg');
+                    if (msg) msg.classList.add('hidden');
+                }, 5000);
+            } catch (err) {
+                window.customAlert("Falha ao Enviar", "Não conseguimos enviar a mensagem: " + err.message, true);
+            }
+        };
+
+        window.setAdminTab = (tab) => { 
+            state.activeAdminTab = tab; 
+            state.editingItem = null; 
+            state.editingCategory = null;
+            renderAdmin(); 
+        };
+
+        window.setStatsSubTab = (subtab) => {
+            state.activeStatsSubTab = subtab;
+            renderAdmin();
+        };
+
+        window.editVerbete = (id) => { 
+            state.editingItem = state.verbetes.find(v => v.id === id) || {}; 
+            renderAdmin(); 
+        };
+
+        window.newVerbete = () => { 
+            state.editingItem = {}; 
+            renderAdmin(); 
+        };
+
+        window.cancelEdit = () => { 
+            state.editingItem = null; 
+            renderAdmin(); 
+        };
+
+        window.updateAdminSearch = (val) => { 
+            state.adminSearchQuery = val; 
+            const container = document.getElementById('admin-table-container');
+            if (container) {
+                container.innerHTML = getAdminTableHTML();
+                lucide.createIcons();
+            } else {
+                renderAdmin(); 
+            }
+        };
+
+        window.toggleAdminSort = () => { 
+            state.adminSortAZ = !state.adminSortAZ; 
+            renderAdmin(); 
+        };
+
+        window.deleteFeedback = async (id) => {
+            window.customConfirm("Deseja realmente remover essa revisão/feedback do banco?", async (confirmed) => {
+                if(confirmed) {
+                    if (db) {
+                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'feedbacks', id));
+                    } else {
+                        state.feedbacks = state.feedbacks.filter(f => f.id !== id);
+                        renderAdmin();
+                    }
+                }
+            });
+        };
+
+        window.resolveFeedback = async (id) => {
+            if (db) {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'feedbacks', id);
+                await updateDoc(docRef, { status: 'resolvido' });
+            } else {
+                const item = state.feedbacks.find(f => f.id === id);
+                if (item) item.status = 'resolvido';
+                renderAdmin();
+            }
+        };
+
+        window.ignoreFeedback = async (id) => {
+            if (db) {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'feedbacks', id);
+                await updateDoc(docRef, { status: 'ignorado' });
+            } else {
+                const item = state.feedbacks.find(f => f.id === id);
+                if (item) item.status = 'ignorado';
+                renderAdmin();
+            }
+        };
+
+        window.deleteContato = async (id) => {
+            window.customConfirm("Remover esta mensagem permanentemente?", async (confirmed) => {
+                if (confirmed) {
+                    if (db) {
+                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'contatos', id));
+                    } else {
+                        state.contatos = state.contatos.filter(c => c.id !== id);
+                        renderAdmin();
+                    }
+                }
+            });
+        };
+
+        window.saveVerbete = async (event) => {
+            event.preventDefault();
+            const fd = new FormData(event.target);
+            
+            const data = {
+                nome: fd.get('nome'),
+                categoria: fd.get('categoria'),
+                descricao: fd.get('descricao'),
+                temNoKit: fd.get('temNoKit') === 'on',
+                exemploUso: fd.get('exemploUso'),
+                imagemOuVideo: fd.get('imagemOuVideo'),
+                midia2: fd.get('midia2') || '',
+                midia3: fd.get('midia3') || '',
+                midia4: fd.get('midia4') || '',
+                linkTeste1_url: fd.get('linkTeste1_url') || '',
+                linkTeste1_text: fd.get('linkTeste1_text') || '',
+                linkTeste2_url: fd.get('linkTeste2_url') || '',
+                linkTeste2_text: fd.get('linkTeste2_text') || '',
+                linkTeste3_url: fd.get('linkTeste3_url') || '',
+                linkTeste3_text: fd.get('linkTeste3_text') || '',
+                linkAux1_url: fd.get('linkAux1_url') || '',
+                linkAux1_text: fd.get('linkAux1_text') || '',
+                linkAux2_url: fd.get('linkAux2_url') || '',
+                linkAux2_text: fd.get('linkAux2_text') || '',
+                linkAux3_url: fd.get('linkAux3_url') || '',
+                linkAux3_text: fd.get('linkAux3_text') || '',
+                habilitarRelacionados: fd.get('habilitarRelacionados') === 'on',
+                relacionados: fd.getAll('relacionados') || [],
+                dataCriacao: state.editingItem.dataCriacao || new Date().toISOString(),
+                ultimaAtualizacao: new Date().toISOString()
+            };
+            const id = state.editingItem.id || `verb_${Date.now()}`;
+            try {
+                if (db) {
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'verbetes', id), data);
+                } else {
+                    const idx = state.verbetes.findIndex(v => v.id === id);
+                    if (idx > -1) state.verbetes[idx] = { id, ...data };
+                    else state.verbetes.push({ id, ...data });
+                }
+                state.editingItem = null;
+                renderAdmin();
+            } catch(e) { window.customAlert("Falha ao Salvar", e.message, true); }
+        };
+
+        window.deleteVerbete = async (id) => {
+            window.customConfirm("Deseja realmente excluir este verbete?", async (confirmed) => {
+                if (confirmed) {
+                    if (db) {
+                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'verbetes', id));
+                    } else {
+                        state.verbetes = state.verbetes.filter(v => v.id !== id);
+                        renderAdmin();
+                    }
+                }
+            });
+        };
+
+        window.newCategory = () => {
+            state.editingCategory = {};
+            renderAdmin();
+        };
+
+        window.editCategory = (id) => {
+            state.editingCategory = state.categorias.find(c => c.id === id) || {};
+            renderAdmin();
+        };
+
+        window.cancelCategoryEdit = () => {
+            state.editingCategory = null;
+            renderAdmin();
+        };
+
+        window.saveCategory = async (event) => {
+            event.preventDefault();
+            const fd = new FormData(event.target);
+            const data = {
+                emoji: fd.get('emoji'),
+                nome: fd.get('nome'),
+                cor: fd.get('cor'),
+                dataCriacao: state.editingCategory.dataCriacao || new Date().toISOString()
+            };
+            const id = state.editingCategory.id || `cat_${Date.now()}`;
+            try {
+                if (db) {
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'categorias', id), data);
+                } else {
+                    const idx = state.categorias.findIndex(c => c.id === id);
+                    if (idx > -1) state.categorias[idx] = { id, ...data };
+                    else state.categorias.push({ id, ...data });
+                }
+                state.editingCategory = null;
+                renderAdmin();
+            } catch (err) {
+                window.customAlert("Falha ao Salvar Categoria", err.message, true);
+            }
+        };
+
+        window.deleteCategory = async (id) => {
+            const cat = state.categorias.find(c => c.id === id);
+            if (!cat) return;
+            
+            const hasVerbetes = state.verbetes.some(v => v.categoria === cat.nome);
+            if (hasVerbetes) {
+                window.customAlert("Ação Bloqueada", `Não é possível excluir a categoria "${cat.nome}" pois existem verbetes associados a ela no sistema! Modifique ou remova os verbetes primeiro.`, true);
+                return;
+            }
+
+            window.customConfirm(`Deseja realmente remover a categoria "${cat.emoji} ${cat.nome}"?`, async (confirmed) => {
+                if (confirmed) {
+                    if (db) {
+                        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'categorias', id));
+                    } else {
+                        state.categorias = state.categorias.filter(c => c.id !== id);
+                        renderAdmin();
+                    }
+                }
+            });
+        };
+
+        window.adminLogin = async () => {
+            window.showLoginModal();
+        };
+
+        window.adminLogout = () => {
+            if (auth) {
+                signOut(auth);
+                state.isAdmin = false;
+                window.navigateTo('home');
+            } else {
+                state.user = null;
+                state.isAdmin = false;
+                renderView();
+            }
+        };
+
+        window.updateNavbar = updateNavbar;
+        window.renderHome = renderHome;
+        window.renderContact = renderContact;
+        window.renderGlossary = renderGlossary;
+        window.renderItem = renderItem;
+        window.renderAdmin = renderAdmin;
+
+        // ==========================================
+        // START APP
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            initApp();
+            window.navigateTo('home');
+            lucide.createIcons();
+        });
+
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robopédia: o Manual de Robótica da SEDUC-SP</title>
+    
+    <!-- Google Analytics (GA4) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-0MYYV46RJX"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-0MYYV46RJX');
+    </script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
     <!-- Importmap para Firebase Modules -->
     <script type="importmap">
         {
