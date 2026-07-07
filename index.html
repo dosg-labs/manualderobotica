@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manual de Robótica - Glossário Interativo</title>
+    <title>Robopédia: o Manual de Robótica da SEDUC-SP</title>
     
     <!-- Google Analytics (GA4) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-0MYYV46RJX"></script>
@@ -80,7 +80,7 @@
                         <i data-lucide="book-open" class="text-white h-6 w-6"></i>
                     </div>
                     <span class="font-extrabold text-xl tracking-tight text-slate-900">
-                        Manual de <span class="text-red-600">Robótica</span>
+                        Robopédia: o <span class="text-red-600">Manual de Robótica da SEDUC-SP</span>
                     </span>
                 </div>
                 
@@ -115,7 +115,7 @@
         <!-- LOADING SPINNER -->
         <div id="loading-view" class="absolute inset-0 z-10 bg-slate-50 flex flex-col items-center justify-center pt-20 no-print">
             <div class="w-16 h-16 border-8 border-slate-200 border-t-red-600 rounded-full animate-spin mb-4"></div>
-            <h2 class="text-xl font-bold text-slate-600">Carregando Manual de Robótica...</h2>
+            <h2 class="text-xl font-bold text-slate-600">Carregando a Robopédia...</h2>
         </div>
 
         <!-- VIEWS -->
@@ -133,11 +133,11 @@
             <div class="flex items-center justify-center mb-4 opacity-70">
                 <img src="https://mirrors.creativecommons.org/presskit/buttons/88x31/svg/by-nc-sa.svg" alt="Licença Creative Commons" class="h-8" />
             </div>
-            <p class="font-medium text-sm">
-                Equipe de Robótica - Secretaria de Estado da Educação de São Paulo - 2026
+            <p class="font-medium text-sm text-slate-300">
+                Desenvolvido por: Diego de Oliveira. Equipe de Robótica - Secretaria de Estado da Educação de São Paulo - 2026
             </p>
             <p class="text-xs mt-2 opacity-60">
-                Este trabalho está licensed sob uma Licença Creative Commons Atribuição-NãoComercial-CompartilhaIgual 4.0 Internacional.
+                Este trabalho está licenciado sob uma Licença Creative Commons Atribuição-NãoComercial-CompartilhaIgual 4.0 Internacional.
             </p>
         </div>
     </footer>
@@ -429,7 +429,7 @@
                     <div class="absolute bottom-0 left-0 w-48 h-48 bg-slate-100 rounded-full blur-3xl -ml-10 -mb-10 z-0"></div>
                     
                     <div class="max-w-xl mb-8 md:mb-0 relative z-10">
-                        <div class="inline-block bg-red-100 text-red-700 font-bold px-3 py-1 rounded-full text-sm mb-4 border border-red-200">🤖 Manual Oficial</div>
+                        <div class="inline-block bg-red-100 text-red-700 font-bold px-3 py-1 rounded-full text-sm mb-4 border border-red-200">🤖 Robopédia Oficial</div>
                         <h1 class="text-4xl sm:text-5xl font-extrabold mb-4 leading-tight text-slate-900">Aprenda Robótica de <span class="text-red-600">Forma Divertida!</span></h1>
                         <p class="text-lg font-medium text-slate-600 mb-6">Explore componentes, sensores, ferramentas e conceitos com o nosso glossário interativo.</p>
                         <button onclick="window.navigateTo('glossary')" class="bg-red-600 text-white font-extrabold py-3 px-8 rounded-full shadow-md hover:bg-red-700 hover:shadow-lg hover:-translate-y-1 transition-all">Começar a Explorar</button>
@@ -527,9 +527,7 @@
             `;
         }
 
-        function renderGlossary() {
-            const container = document.getElementById('view-glossary');
-            
+        function getGlossaryGridHTML() {
             const filtered = state.verbetes.filter(v => {
                 const matchesSearch = v.nome.toLowerCase().includes(state.searchQuery.toLowerCase()) ||
                                       v.descricao.toLowerCase().includes(state.searchQuery.toLowerCase()) ||
@@ -538,6 +536,87 @@
                 return matchesSearch && matchesCategory;
             }).sort((a, b) => a.nome.localeCompare(b.nome));
 
+            if (filtered.length === 0) {
+                return `
+                    <div class="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200">
+                        <div class="text-6xl mb-4">🕵️‍♂️</div>
+                        <h3 class="text-xl font-bold text-slate-600">Nenhum item encontrado.</h3>
+                        <p class="text-slate-400 font-medium">Tente buscar por outras palavras.</p>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    ${filtered.map(v => generateCardHTML(v)).join('')}
+                </div>
+            `;
+        }
+
+        function getAdminTableHTML() {
+            let adminList = [...state.verbetes];
+            
+            if (state.adminSearchQuery) {
+                const q = state.adminSearchQuery.toLowerCase();
+                adminList = adminList.filter(v => 
+                    v.nome.toLowerCase().includes(q) || 
+                    v.categoria.toLowerCase().includes(q)
+                );
+            }
+
+            if (state.adminSortAZ) {
+                adminList.sort((a,b) => a.nome.localeCompare(b.nome));
+            } else {
+                adminList.sort((a,b) => (b.dataCriacao || '').localeCompare(a.dataCriacao || ''));
+            }
+
+            if (adminList.length === 0) {
+                return `
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b-2 border-slate-200 text-slate-500 text-sm">
+                                <th class="p-4 font-bold">Nome do Verbete</th>
+                                <th class="p-4 font-bold">Categoria</th>
+                                <th class="p-4 font-bold text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="3" class="p-8 text-center text-slate-400 font-medium">Nenhum verbete encontrado.</td></tr>
+                        </tbody>
+                    </table>
+                `;
+            }
+
+            return `
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 border-b-2 border-slate-200 text-slate-500 text-sm">
+                            <th class="p-4 font-bold">Nome do Verbete</th>
+                            <th class="p-4 font-bold">Categoria</th>
+                            <th class="p-4 font-bold text-right">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${adminList.map(v => `
+                            <tr class="border-b border-slate-100 hover:bg-blue-50 transition-colors">
+                                <td class="p-4 font-bold text-slate-700 flex items-center">
+                                    <span>${v.nome}</span>
+                                    ${v.temNoKit ? `<span class="bg-green-100 text-green-700 font-extrabold text-[10px] px-2 py-0.5 rounded-full border border-green-200 ml-2">📦 No Kit</span>` : ''}
+                                </td>
+                                <td class="p-4 font-medium text-slate-500"><span class="bg-slate-100 px-2 py-1 rounded text-xs">${v.categoria}</span></td>
+                                <td class="p-4 flex gap-2 justify-end">
+                                    <button onClick="window.editVerbete('${v.id}')" class="p-2 bg-white border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-100 shadow-sm" title="Editar"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                                    <button onclick="window.deleteVerbete('${v.id}')" class="p-2 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-100 shadow-sm" title="Excluir"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function renderGlossary() {
+            const container = document.getElementById('view-glossary');
             const catsHTML = state.categorias.map(cat => {
                 const isSel = state.selectedCategoryFilter === cat.nome;
                 const style = isSel ? `background-color: ${cat.cor}; border-color: rgba(0,0,0,0.2); color: white;` : '';
@@ -565,17 +644,9 @@
                     ${catsHTML}
                 </div>
 
-                ${filtered.length === 0 ? `
-                    <div class="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200">
-                        <div class="text-6xl mb-4">🕵️‍♂️</div>
-                        <h3 class="text-xl font-bold text-slate-600">Nenhum item encontrado.</h3>
-                        <p class="text-slate-400 font-medium">Tente buscar por outras palavras.</p>
-                    </div>
-                ` : `
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        ${filtered.map(v => generateCardHTML(v)).join('')}
-                    </div>
-                `}
+                <div id="glossary-grid-container">
+                    ${getGlossaryGridHTML()}
+                </div>
             `;
             lucide.createIcons();
         }
@@ -648,7 +719,7 @@
             if (state.hasVotedCurrentItem) {
                 feedbackWidgetHTML = `
                     <div class="bg-green-50 border-2 border-green-200 rounded-2xl p-6 text-center text-green-800 font-bold animate-in fade-in">
-                        🎉 Obrigado pelo seu feedback! Isso nos ajuda a aprimorar o Manual de Robótica.
+                        🎉 Obrigado pelo seu feedback! Isso nos ajuda a aprimorar a Robopédia.
                     </div>
                 `;
             } else if (state.showFeedbackInput) {
@@ -1110,22 +1181,6 @@
 
             // 3. LISTA PRINCIPAL DE VERBETES
             } else if (state.activeAdminTab === 'verbetes') {
-                let adminList = [...state.verbetes];
-                
-                if (state.adminSearchQuery) {
-                    const q = state.adminSearchQuery.toLowerCase();
-                    adminList = adminList.filter(v => 
-                        v.nome.toLowerCase().includes(q) || 
-                        v.categoria.toLowerCase().includes(q)
-                    );
-                }
-
-                if (state.adminSortAZ) {
-                    adminList.sort((a,b) => a.nome.localeCompare(b.nome));
-                } else {
-                    adminList.sort((a,b) => (b.dataCriacao || '').localeCompare(a.dataCriacao || ''));
-                }
-
                 mainContent = `
                     <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                         <div class="flex items-center gap-4 w-full md:w-auto flex-1">
@@ -1144,33 +1199,8 @@
                         </button>
                     </div>
                     
-                    <div class="overflow-x-auto rounded-xl border-2 border-slate-100">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-slate-50 border-b-2 border-slate-200 text-slate-500 text-sm">
-                                    <th class="p-4 font-bold">Nome do Verbete</th>
-                                    <th class="p-4 font-bold">Categoria</th>
-                                    <th class="p-4 font-bold text-right">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${adminList.length > 0 ? adminList.map(v => `
-                                    <tr class="border-b border-slate-100 hover:bg-blue-50 transition-colors">
-                                        <td class="p-4 font-bold text-slate-700 flex items-center">
-                                            <span>${v.nome}</span>
-                                            ${v.temNoKit ? `<span class="bg-green-100 text-green-700 font-extrabold text-[10px] px-2 py-0.5 rounded-full border border-green-200 ml-2">📦 No Kit</span>` : ''}
-                                        </td>
-                                        <td class="p-4 font-medium text-slate-500"><span class="bg-slate-100 px-2 py-1 rounded text-xs">${v.categoria}</span></td>
-                                        <td class="p-4 flex gap-2 justify-end">
-                                            <button onClick="window.editVerbete('${v.id}')" class="p-2 bg-white border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-100 shadow-sm" title="Editar"><i data-lucide="edit" class="w-4 h-4"></i></button>
-                                            <button onclick="window.deleteVerbete('${v.id}')" class="p-2 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-100 shadow-sm" title="Excluir"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                                        </td>
-                                    </tr>
-                                `).join('') : `
-                                    <tr><td colspan="3" class="p-8 text-center text-slate-400 font-medium">Nenhum verbete encontrado.</td></tr>
-                                `}
-                            </tbody>
-                        </table>
+                    <div class="overflow-x-auto rounded-xl border-2 border-slate-100" id="admin-table-container">
+                        ${getAdminTableHTML()}
                     </div>
                 `;
 
@@ -1628,7 +1658,17 @@
             window.scrollTo({top: 0, behavior: 'smooth'});
         };
 
-        window.updateSearch = (val) => { state.searchQuery = val; renderGlossary(); };
+        window.updateSearch = (val) => { 
+            state.searchQuery = val; 
+            const container = document.getElementById('glossary-grid-container');
+            if (container) {
+                container.innerHTML = getGlossaryGridHTML();
+                lucide.createIcons();
+            } else {
+                renderGlossary(); 
+            }
+        };
+
         window.setFilter = (cat) => { state.selectedCategoryFilter = cat; renderGlossary(); };
         window.openItem = (id) => {
             const item = state.verbetes.find(v => v.id === id);
@@ -1752,7 +1792,13 @@
 
         window.updateAdminSearch = (val) => { 
             state.adminSearchQuery = val; 
-            renderAdmin(); 
+            const container = document.getElementById('admin-table-container');
+            if (container) {
+                container.innerHTML = getAdminTableHTML();
+                lucide.createIcons();
+            } else {
+                renderAdmin(); 
+            }
         };
 
         window.toggleAdminSort = () => { 
