@@ -1,4 +1,4 @@
-# Robopédia: o Manual de Robótica da SEDUC-SP 🤖📚
+# Robopédia: o Manual de Robótica da SEDUC-SP
 ### *Guia Interativo do Manual de Robótica da SEDUC-SP*
 
 Seja bem-vindo(a) ao repositório oficial da **Robopédia: o Manual de Robótica da SEDUC-SP**! 
