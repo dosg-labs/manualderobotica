@@ -29,8 +29,7 @@ Ao contrário de um PDF estático, esta plataforma funciona por meio de **verbet
 
 ## 📂 Organização do Repositório
 
-* `/index.html` (ou estrutura de pastas do seu gerador, ex: `docs/`): Interface e arquitetura da enciclopédia.
-* `[Caso aplique, adicione outras pastas relevantes aqui, como assets/ ou css/]`
+* `/index.html
 
 ---
 
