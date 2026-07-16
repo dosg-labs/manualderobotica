@@ -77,7 +77,7 @@
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-20 items-center">
                 
-                <!-- Brand Logo Redesenhado -->
+                <!-- Brand Logo -->
                 <div class="flex items-center cursor-pointer group" onclick="window.navigateTo('home')">
                     <div class="bg-gradient-to-tr from-red-600 to-red-500 p-2.5 rounded-2xl mr-3 shadow-md shadow-red-500/20 group-hover:scale-105 transition-transform duration-300">
                         <i data-lucide="book-open" class="text-white h-6 w-6"></i>
@@ -92,7 +92,7 @@
                     <button onclick="window.navigateTo('home')" class="nav-btn font-extrabold text-sm px-4 py-2 rounded-xl transition-all duration-300 text-red-600 bg-red-50" data-target="home">Início</button>
                     <button onclick="window.navigateTo('glossary')" class="nav-btn font-extrabold text-sm px-4 py-2 rounded-xl transition-all duration-300 text-slate-600 hover:text-red-600 hover:bg-slate-50" data-target="glossary">Glossário</button>
                     
-                    <!-- Link Fantasma: Projetos (Reservado com indicador de desenvolvimento futuro) -->
+                    <!-- Link Fantasma: Projetos (Desenvolvimento Futuro) -->
                     <button onclick="javascript:void(0)" class="nav-btn font-extrabold text-sm px-4 py-2 rounded-xl text-slate-400 cursor-not-allowed flex items-center gap-1.5" title="Em breve">
                         Projetos
                         <span class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide">Breve</span>
@@ -232,6 +232,22 @@
         ];
 
         // ==========================================
+        // SEGURANÇA: SANITIZAÇÃO DE ENTRADAS (ANTI-XSS)
+        // ==========================================
+        const escapeHTML = (str) => {
+            if (typeof str !== 'string') return str;
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag] || tag)
+            );
+        };
+
+        // ==========================================
         // ESTADO GLOBAL DA APLICAÇÃO
         // ==========================================
         const state = {
@@ -258,13 +274,10 @@
         };
 
         // ==========================================
-        // CONFIGURAÇÃO DO AMBIENTE FIREBASE
+        // CONFIGURAÇÃO DO AMBIENTE FIREBASE (SEM OBSTRUIÇÕES)
         // ==========================================
-        const _keyA = "AIzaSyBDX50c8G";
-        const _keyB = "6tfx8zwdDgm5ZZGaiR1Cef2hs";
-
         const productionConfig = {
-            apiKey: _keyA + _keyB,
+            apiKey: "AIzaSyBDX50c8G6tfx8zwdDgm5ZZGaiR1Cef2hs",
             authDomain: "manual-de-robotica-seduc.firebaseapp.com",
             projectId: "manual-de-robotica-seduc",
             storageBucket: "manual-de-robotica-seduc.firebasestorage.app",
@@ -274,7 +287,12 @@
         };
 
         let app, auth, db;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'robotica-app';
+        
+        // CORREÇÃO CRÍTICA DE SEGURANÇA/PERMISSÃO DO FIRESTORE:
+        // Se o __app_id contiver barras '/' (comum em sandboxes), removemos para virar um único segmento válido nas regras
+        const rawAppId = typeof __app_id !== 'undefined' ? __app_id : 'robotica-app';
+        const appId = rawAppId.replace(/\//g, '_');
+        
         const rawConfig = typeof __firebase_config !== 'undefined' ? __firebase_config : '{}';
         
         let parsedConfig = {};
@@ -390,7 +408,7 @@
         // ==========================================
         function updateNavbar() {
             document.querySelectorAll('.nav-btn').forEach(btn => {
-                if (!btn.dataset.target) return; // ignora botões sem target (tipo o link de Projetos)
+                if (!btn.dataset.target) return;
                 const isActive = btn.dataset.target === state.view;
                 btn.className = `nav-btn font-bold transition-all px-4 py-2 rounded-full ${
                     isActive ? 'bg-red-50 text-red-600 shadow-sm' : 'text-slate-600 hover:text-red-500 hover:bg-slate-50'
@@ -407,16 +425,16 @@
             ` : '';
             return `
                 <div class="bg-white rounded-3xl p-5 shadow-sm border-2 border-slate-100 border-b-4 hover:-translate-y-1 hover:shadow-xl hover:border-b-4 transition-all flex flex-col h-full cursor-pointer group relative overflow-hidden"
-                    onclick="window.openItem('${v.id}')">
-                    <div class="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-300" style="background-color: ${cat.cor}"></div>
+                    onclick="window.openItem('${escapeHTML(v.id)}')">
+                    <div class="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-300" style="background-color: ${escapeHTML(cat.cor)}"></div>
                     <div class="flex justify-between items-start mb-3 relative z-10">
                         <div class="flex items-center flex-wrap gap-y-1">
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm" style="background-color: ${cat.cor}">${cat.emoji} ${v.categoria}</span>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm" style="background-color: ${escapeHTML(cat.cor)}">${escapeHTML(cat.emoji)} ${escapeHTML(v.categoria)}</span>
                             ${temNoKitHTML}
                         </div>
                     </div>
-                    <h3 class="text-xl font-extrabold text-slate-800 mb-2 leading-tight group-hover:text-red-600 transition-colors relative z-10">${v.nome}</h3>
-                    <p class="text-slate-500 font-medium text-sm line-clamp-3 mb-4 flex-grow relative z-10">${v.descricao}</p>
+                    <h3 class="text-xl font-extrabold text-slate-800 mb-2 leading-tight group-hover:text-red-600 transition-colors relative z-10">${escapeHTML(v.nome)}</h3>
+                    <p class="text-slate-500 font-medium text-sm line-clamp-3 mb-4 flex-grow relative z-10">${escapeHTML(v.descricao)}</p>
                     <div class="flex justify-between items-center pt-3 border-t-2 border-slate-50 relative z-10">
                         <span class="font-bold text-sm text-slate-600 group-hover:text-red-600 transition-colors">Ver Detalhes</span>
                         <div class="bg-slate-100 p-2 rounded-full group-hover:bg-red-100 group-hover:text-red-600 transition-colors"><i data-lucide="chevron-right" class="w-4 h-4"></i></div>
@@ -601,13 +619,13 @@
                         ${adminList.map(v => `
                             <tr class="border-b border-slate-100 hover:bg-blue-50 transition-colors">
                                 <td class="p-4 font-bold text-slate-700 flex items-center">
-                                    <span>${v.nome}</span>
+                                    <span>${escapeHTML(v.nome)}</span>
                                     ${v.temNoKit ? `<span class="bg-green-100 text-green-700 font-extrabold text-[10px] px-2 py-0.5 rounded-full border border-green-200 ml-2">📦 No Kit</span>` : ''}
                                 </td>
-                                <td class="p-4 font-medium text-slate-500"><span class="bg-slate-100 px-2 py-1 rounded text-xs">${v.categoria}</span></td>
+                                <td class="p-4 font-medium text-slate-500"><span class="bg-slate-100 px-2 py-1 rounded text-xs">${escapeHTML(v.categoria)}</span></td>
                                 <td class="p-4 flex gap-2 justify-end">
-                                    <button onClick="window.editVerbete('${v.id}')" class="p-2 bg-white border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-100 shadow-sm" title="Editar"><i data-lucide="edit" class="w-4 h-4"></i></button>
-                                    <button onclick="window.deleteVerbete('${v.id}')" class="p-2 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-100 shadow-sm" title="Excluir"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                    <button onClick="window.editVerbete('${escapeHTML(v.id)}')" class="p-2 bg-white border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-100 shadow-sm" title="Editar"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                                    <button onclick="window.deleteVerbete('${escapeHTML(v.id)}')" class="p-2 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-100 shadow-sm" title="Excluir"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                                 </td>
                             </tr>
                         `).join('')}
@@ -620,9 +638,9 @@
             const container = document.getElementById('view-glossary');
             const catsHTML = state.categorias.map(cat => {
                 const isSel = state.selectedCategoryFilter === cat.nome;
-                const style = isSel ? `background-color: ${cat.cor}; border-color: rgba(0,0,0,0.2); color: white;` : '';
+                const style = isSel ? `background-color: ${escapeHTML(cat.cor)}; border-color: rgba(0,0,0,0.2); color: white;` : '';
                 const cls = `px-4 py-2 rounded-full font-bold text-sm transition-all border-b-4 ${!isSel ? 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50' : ''}`;
-                return `<button onclick="window.setFilter('${cat.nome}')" style="${style}" class="${cls}">${cat.emoji} ${cat.nome}</button>`;
+                return `<button onclick="window.setFilter('${escapeHTML(cat.nome)}')" style="${style}" class="${cls}">${escapeHTML(cat.emoji)} ${escapeHTML(cat.nome)}</button>`;
             }).join('');
 
             const allBtnCls = state.selectedCategoryFilter === 'all' ? 'bg-slate-800 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50';
@@ -634,7 +652,7 @@
                         <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             <i data-lucide="search" class="h-5 w-5 text-slate-400"></i>
                         </div>
-                        <input type="text" oninput="window.updateSearch(this.value)" value="${state.searchQuery}"
+                        <input type="text" oninput="window.updateSearch(this.value)" value="${escapeHTML(state.searchQuery)}"
                             class="block w-full pl-11 pr-4 py-3 bg-white border-2 border-slate-200 rounded-full font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:border-red-500 focus:ring-0 transition-colors shadow-sm"
                             placeholder="Buscar por nome, categoria...">
                     </div>
@@ -667,7 +685,7 @@
                 
                 if (item.imagemOuVideo) {
                     if (isVideo) {
-                        const embedUrl = ytId ? `https://www.youtube.com/embed/${ytId}` : item.imagemOuVideo;
+                        const embedUrl = ytId ? `https://www.youtube.com/embed/${escapeHTML(ytId)}` : escapeHTML(item.imagemOuVideo);
                         mediaHTML += `
                             <div class="w-full aspect-video rounded-3xl overflow-hidden bg-black flex flex-col items-center justify-center relative shadow-md mb-4 border border-slate-100">
                                 <iframe class="w-full h-full" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
@@ -676,7 +694,7 @@
                     } else {
                         mediaHTML += `
                             <div class="w-full overflow-hidden rounded-3xl bg-slate-50 border border-slate-100 shadow-md mb-4 flex justify-center items-center">
-                                <img src="${item.imagemOuVideo}" alt="${item.nome}" class="w-full h-auto max-h-[500px] object-cover cursor-pointer hover:scale-[1.01] transition duration-300" onclick="window.openLightbox('${item.imagemOuVideo}', false)" title="Clique para ampliar" />
+                                <img src="${escapeHTML(item.imagemOuVideo)}" alt="${escapeHTML(item.nome)}" class="w-full h-auto max-h-[500px] object-cover cursor-pointer hover:scale-[1.01] transition duration-300" onclick="window.openLightbox('${escapeHTML(item.imagemOuVideo)}', false)" title="Clique para ampliar" />
                             </div>
                         `;
                     }
@@ -692,8 +710,8 @@
                         const isVid = !!sYtId || m.match(/\.(mp4|webm|ogg)$/i);
 
                         if (isVid) {
-                            const embedUrl = sYtId ? `https://www.youtube.com/embed/${sYtId}` : m;
-                            const thumbUrl = sYtId ? `https://img.youtube.com/vi/${sYtId}/0.jpg` : 'https://via.placeholder.com/300x200?text=Video';
+                            const embedUrl = sYtId ? `https://www.youtube.com/embed/${escapeHTML(sYtId)}` : escapeHTML(m);
+                            const thumbUrl = sYtId ? `https://img.youtube.com/vi/${escapeHTML(sYtId)}/0.jpg` : 'https://via.placeholder.com/300x200?text=Video';
                             mediaHTML += `
                                 <div class="aspect-video w-full bg-slate-900 rounded-2xl flex items-center justify-center cursor-pointer hover:opacity-90 hover:scale-[1.02] transition duration-300 relative shadow-sm border-2 border-slate-100 overflow-hidden" onclick="window.openLightbox('${embedUrl}', true)" title="Assistir Vídeo">
                                     <i data-lucide="play-circle" class="text-white w-10 h-10 absolute z-10 drop-shadow-lg"></i>
@@ -701,8 +719,8 @@
                                 </div>`;
                         } else {
                             mediaHTML += `
-                                <div class="aspect-video w-full rounded-2xl bg-slate-50 border-2 border-slate-100 overflow-hidden shadow-sm hover:opacity-90 hover:scale-[1.02] transition duration-300 cursor-pointer" onclick="window.openLightbox('${m}', false)" title="Clique para ampliar">
-                                    <img src="${m}" class="w-full h-full object-cover" />
+                                <div class="aspect-video w-full rounded-2xl bg-slate-50 border-2 border-slate-100 overflow-hidden shadow-sm hover:opacity-90 hover:scale-[1.02] transition duration-300 cursor-pointer" onclick="window.openLightbox('${escapeHTML(m)}', false)" title="Clique para ampliar">
+                                    <img src="${escapeHTML(m)}" class="w-full h-full object-cover" />
                                 </div>`;
                         }
                     });
@@ -758,12 +776,12 @@
 
                 <div class="bg-white rounded-[2rem] shadow-xl overflow-hidden border-2 border-slate-100 mb-8">
                     <!-- Banner de Cor -->
-                    <div class="h-16 md:h-20 w-full" style="background-color: ${cat.cor}"></div>
+                    <div class="h-16 md:h-20 w-full" style="background-color: ${escapeHTML(cat.cor)}"></div>
 
                     <div class="p-8 md:p-12">
                         <div class="flex items-center mb-4 flex-wrap gap-2">
-                            <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-extrabold text-white shadow-sm" style="background-color: ${cat.cor}">
-                                ${cat.emoji} ${item.categoria}
+                            <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-extrabold text-white shadow-sm" style="background-color: ${escapeHTML(cat.cor)}">
+                                ${escapeHTML(cat.emoji)} ${escapeHTML(item.categoria)}
                             </span>
                             ${item.temNoKit ? `
                                 <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-extrabold bg-green-100 text-green-700 border border-green-200 shadow-sm">
@@ -772,7 +790,7 @@
                             ` : ''}
                         </div>
                         
-                        <h1 class="text-4xl md:text-5xl font-extrabold text-slate-800 tracking-tight">${item.nome}</h1>
+                        <h1 class="text-4xl md:text-5xl font-extrabold text-slate-800 tracking-tight">${escapeHTML(item.nome)}</h1>
 
                         ${mediaHTML}
 
@@ -781,7 +799,7 @@
                                 <h3 class="text-xl font-extrabold text-slate-700 mb-3 flex items-center">
                                     <i data-lucide="info" class="w-6 h-6 mr-2 text-blue-500"></i> O que é?
                                 </h3>
-                                <p class="text-lg text-slate-600 font-medium leading-relaxed bg-slate-50 p-6 rounded-2xl border border-slate-100">${item.descricao}</p>
+                                <p class="text-lg text-slate-600 font-medium leading-relaxed bg-slate-50 p-6 rounded-2xl border border-slate-100">${escapeHTML(item.descricao)}</p>
                             </section>
 
                             ${item.exemploUso ? `
@@ -789,10 +807,10 @@
                                 <h3 class="text-xl font-extrabold text-slate-700 mb-3 flex items-center">
                                     <i data-lucide="layout-grid" class="w-6 h-6 mr-2 text-green-500"></i> Exemplo de Uso
                                 </h3>
-                                <p class="text-lg text-slate-600 font-medium leading-relaxed bg-green-50/50 border-2 border-green-100 p-6 rounded-2xl">${item.exemploUso}</p>
+                                <p class="text-lg text-slate-600 font-medium leading-relaxed bg-green-50/50 border-2 border-green-100 p-6 rounded-2xl">${escapeHTML(item.exemploUso)}</p>
                             </section>` : ''}
 
-                            <!-- REQUISITO 1: LINKS DE PROGRAMAÇÃO TESTE COM TEXTO EDITÁVEL (POSICIONADO APÓS EXEMPLO DE USO) -->
+                            <!-- REQUISITO 1: LINKS DE PROGRAMAÇÃO TESTE COM TEXTO EDITÁVEL -->
                             ${[
                                 { url: item.linkTeste1_url || item.linkMakeCode, text: item.linkTeste1_text || 'Ver programação de teste no MakeCode' },
                                 { url: item.linkTeste2_url, text: item.linkTeste2_text || 'Programação de Teste Alternativa' },
@@ -808,15 +826,15 @@
                                         { url: item.linkTeste2_url, text: item.linkTeste2_text || 'Programação de Teste Alternativa' },
                                         { url: item.linkTeste3_url, text: item.linkTeste3_text || 'Código de Teste Adicional' }
                                     ].filter(x => x.url).map(x => `
-                                        <a href="${x.url.startsWith('http') ? x.url : 'https://' + x.url}" target="_blank" class="w-full bg-[#5C2D91] hover:bg-[#4a2474] text-white p-4 rounded-2xl font-bold text-center flex justify-center items-center shadow-md transform hover:-translate-y-0.5 transition-all">
-                                            <i data-lucide="external-link" class="w-5 h-5 mr-2"></i> ${x.text}
+                                        <a href="${escapeHTML(x.url.startsWith('http') ? x.url : 'https://' + x.url)}" target="_blank" class="w-full bg-[#5C2D91] hover:bg-[#4a2474] text-white p-4 rounded-2xl font-bold text-center flex justify-center items-center shadow-md transform hover:-translate-y-0.5 transition-all">
+                                            <i data-lucide="external-link" class="w-5 h-5 mr-2"></i> ${escapeHTML(x.text)}
                                         </a>
                                     `).join('')}
                                 </div>
                             </section>
                             ` : ''}
 
-                            <!-- OUTROS LINKS ADICIONAIS / DATASHEETS (REQUISITO 2 - APÓS OS LINKS DE TESTE) -->
+                            <!-- OUTROS LINKS ADICIONAIS / DATASHEETS -->
                             ${(item.linkAux1_url || item.linkAux2_url || item.linkAux3_url) ? `
                             <section class="print-break-inside-avoid">
                                 <h3 class="text-xl font-extrabold text-slate-700 mb-3 flex items-center">
@@ -828,8 +846,8 @@
                                         { url: item.linkAux2_url, label: item.linkAux2_text || 'Link Auxiliar 2' },
                                         { url: item.linkAux3_url, label: item.linkAux3_text || 'Link Auxiliar 3' }
                                     ].filter(x => x.url).map(x => `
-                                        <a href="${x.url.startsWith('http') ? x.url : 'https://' + x.url}" target="_blank" class="flex items-center justify-between p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl hover:border-blue-500 hover:bg-blue-50/30 transition duration-300">
-                                            <span class="font-bold text-slate-700 text-sm truncate pr-2">${x.label}</span>
+                                        <a href="${escapeHTML(x.url.startsWith('http') ? x.url : 'https://' + x.url)}" target="_blank" class="flex items-center justify-between p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl hover:border-blue-500 hover:bg-blue-50/30 transition duration-300">
+                                            <span class="font-bold text-slate-700 text-sm truncate pr-2">${escapeHTML(x.label)}</span>
                                             <i data-lucide="external-link" class="w-4 h-4 text-slate-400"></i>
                                         </a>
                                     `).join('')}
@@ -837,19 +855,19 @@
                             </section>
                             ` : ''}
 
-                            <!-- ABA DE UTILIDADE / FEEDBACK (APÓS OS DOCUMENTOS) -->
+                            <!-- ABA DE UTILIDADE / FEEDBACK -->
                             <section class="print-break-inside-avoid no-print pt-4">
                                 ${feedbackWidgetHTML}
                             </section>
 
-                            <!-- BOTÃO DE IMPRESSÃO (NOVO REQUISITO VISUAL) -->
+                            <!-- BOTÃO DE IMPRESSÃO -->
                             <section class="print-break-inside-avoid no-print pt-2">
                                 <button onclick="window.print()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 p-4 rounded-2xl font-bold text-center flex justify-center items-center shadow-sm transform hover:-translate-y-0.5 transition-all border-2 border-slate-200">
                                     <i data-lucide="printer" class="w-5 h-5 mr-2"></i> Imprimir Verbete
                                 </button>
                             </section>
 
-                            <!-- VEJA TAMBÉM (RELACIONADOS - ATÉ O FINAL DO VERBATE) -->
+                            <!-- VEJA TAMBÉM (RELACIONADOS) -->
                             ${(item.habilitarRelacionados && item.relacionados && item.relacionados.length > 0) ? `
                             <section class="print-break-inside-avoid pt-8 mt-8 border-t-2 border-slate-100">
                                 <h3 class="text-2xl font-extrabold text-slate-800 mb-6 flex items-center">
@@ -908,10 +926,10 @@
                         if (state.activeStatsSubTab === 'pendentes') {
                             actionButtons = `
                                 <div class="flex gap-2 mt-4">
-                                    <button onclick="window.resolveFeedback('${f.id}')" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-xl text-xs flex items-center transition">
+                                    <button onclick="window.resolveFeedback('${escapeHTML(f.id)}')" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-xl text-xs flex items-center transition">
                                         <i data-lucide="check" class="w-4 h-4 mr-1"></i> Resolvido
                                     </button>
-                                    <button onclick="window.ignoreFeedback('${f.id}')" class="bg-slate-500 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-xl text-xs flex items-center transition">
+                                    <button onclick="window.ignoreFeedback('${escapeHTML(f.id)}')" class="bg-slate-500 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-xl text-xs flex items-center transition">
                                         <i data-lucide="x" class="w-4 h-4 mr-1"></i> Ignorar
                                     </button>
                                 </div>
@@ -930,14 +948,14 @@
 
                         return `
                             <div class="bg-white border-2 border-slate-100 rounded-2xl p-5 shadow-sm relative flex flex-col justify-between hover:border-slate-300 transition-all">
-                                <button onclick="window.deleteFeedback('${f.id}')" class="absolute top-4 right-4 text-slate-400 hover:text-red-600 p-1" title="Remover Registro">
+                                <button onclick="window.deleteFeedback('${escapeHTML(f.id)}')" class="absolute top-4 right-4 text-slate-400 hover:text-red-600 p-1" title="Remover Registro">
                                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                                 </button>
                                 <div class="pr-8">
                                     <span class="inline-block ${badgeColor} text-xs font-bold px-2.5 py-1 rounded-full mb-2">${badgeLabel}</span>
-                                    <p class="font-extrabold text-slate-800 text-base mb-1">Item: ${f.verbeteNome}</p>
-                                    <p class="text-slate-600 font-medium italic mb-2">"${f.feedbackText || 'Sem descrição.'}"</p>
-                                    <span class="text-xs text-slate-400 font-bold block mt-1">ID: ${f.id}</span>
+                                    <p class="font-extrabold text-slate-800 text-base mb-1">Item: ${escapeHTML(f.verbeteNome)}</p>
+                                    <p class="text-slate-600 font-medium italic mb-2">"${escapeHTML(f.feedbackText || 'Sem descrição.')}"</p>
+                                    <span class="text-xs text-slate-400 font-bold block mt-1">ID: ${escapeHTML(f.id)}</span>
                                 </div>
                                 ${actionButtons}
                                 <div class="text-xs text-slate-400 font-bold mt-3">
@@ -1030,14 +1048,14 @@
             // ABA: VERBETES (FORMULÁRIO DE EDIÇÃO E CRIAÇÃO)
             } else if (state.activeAdminTab === 'verbetes' && state.editingItem) {
                 const i = state.editingItem;
-                const catOptions = state.categorias.map(c => `<option value="${c.nome}" ${c.nome === i.categoria ? 'selected' : ''}>${c.nome}</option>`).join('');
+                const catOptions = state.categorias.map(c => `<option value="${escapeHTML(c.nome)}" ${c.nome === i.categoria ? 'selected' : ''}>${escapeHTML(c.nome)}</option>`).join('');
 
                 const relList = i.relacionados || [];
                 const otherVerbetes = state.verbetes.filter(v => v.id !== i.id).sort((a,b) => a.nome.localeCompare(b.nome));
                 const relatedCheckboxes = otherVerbetes.map(v => `
                     <label class="flex items-center space-x-3 p-2 hover:bg-slate-100 rounded-lg cursor-pointer transition">
-                        <input type="checkbox" name="relacionados" value="${v.id}" ${relList.includes(v.id) ? 'checked' : ''} class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
-                        <span class="text-sm font-medium text-slate-700">${v.nome}</span>
+                        <input type="checkbox" name="relacionados" value="${escapeHTML(v.id)}" ${relList.includes(v.id) ? 'checked' : ''} class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
+                        <span class="text-sm font-medium text-slate-700">${escapeHTML(v.nome)}</span>
                     </label>
                 `).join('');
 
@@ -1053,7 +1071,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label class="block text-sm font-bold text-slate-700 mb-2">Nome do Item *</label>
-                                <input name="nome" value="${i.nome || ''}" required class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700" />
+                                <input name="nome" value="${escapeHTML(i.nome) || ''}" required class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700" />
                             </div>
                             <div>
                                 <label class="block text-sm font-bold text-slate-700 mb-2">Categoria *</label>
@@ -1064,7 +1082,7 @@
                             </div>
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-bold text-slate-700 mb-2">Descrição Completa *</label>
-                                <textarea name="descricao" required rows="4" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700">${i.descricao || ''}</textarea>
+                                <textarea name="descricao" required rows="4" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700">${escapeHTML(i.descricao) || ''}</textarea>
                             </div>
                             
                             <div class="md:col-span-2 flex items-center space-x-3 p-4 bg-green-50/50 border-2 border-green-200 rounded-2xl">
@@ -1076,13 +1094,13 @@
 
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-bold text-slate-700 mb-2">Exemplo de Uso</label>
-                                <textarea name="exemploUso" rows="2" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700">${i.exemploUso || ''}</textarea>
+                                <textarea name="exemploUso" rows="2" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700">${escapeHTML(i.exemploUso) || ''}</textarea>
                             </div>
 
                             <div class="md:col-span-2 bg-slate-50 border-2 border-slate-200 rounded-2xl p-5 space-y-4">
                                 <div>
                                     <label class="block text-sm font-bold text-slate-800 mb-2 flex items-center"><i data-lucide="image" class="w-5 h-5 mr-2 text-blue-500"></i> Mídia Principal (Obrigatória)</label>
-                                    <input name="imagemOuVideo" value="${i.imagemOuVideo || ''}" required placeholder="URL da imagem ou vídeo do YouTube" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700" />
+                                    <input name="imagemOuVideo" value="${escapeHTML(i.imagemOuVideo) || ''}" required placeholder="URL da imagem ou vídeo do YouTube" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700" />
                                 </div>
                                 
                                 ${!hasSecondaryMedia ? `
@@ -1093,9 +1111,9 @@
 
                                 <div id="secondary-media-wrapper" class="${hasSecondaryMedia ? '' : 'hidden'} space-y-3 pt-3 border-t-2 border-slate-200 border-dashed">
                                     <h4 class="text-sm font-bold text-slate-600">Mídias Secundárias (Opcionais)</h4>
-                                    <input name="midia2" value="${i.midia2 || ''}" placeholder="2ª Mídia (URL)" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700" />
-                                    <input name="midia3" value="${i.midia3 || ''}" placeholder="3ª Mídia (URL)" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700" />
-                                    <input name="midia4" value="${i.midia4 || ''}" placeholder="4ª Mídia (URL)" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700" />
+                                    <input name="midia2" value="${escapeHTML(i.midia2) || ''}" placeholder="2ª Mídia (URL)" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700" />
+                                    <input name="midia3" value="${escapeHTML(i.midia3) || ''}" placeholder="3ª Mídia (URL)" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700" />
+                                    <input name="midia4" value="${escapeHTML(i.midia4) || ''}" placeholder="4ª Mídia (URL)" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700" />
                                 </div>
                             </div>
 
@@ -1108,21 +1126,21 @@
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div class="p-3 bg-white rounded-xl border border-purple-100">
                                         <label class="block text-xs font-bold text-purple-800 mb-1">1º Link de Teste (URL)</label>
-                                        <input name="linkTeste1_url" value="${i.linkTeste1_url || i.linkMakeCode || ''}" placeholder="Ex: https://makecode..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 mb-2 font-medium" />
+                                        <input name="linkTeste1_url" value="${escapeHTML(i.linkTeste1_url || i.linkMakeCode) || ''}" placeholder="Ex: https://makecode..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 mb-2 font-medium" />
                                         <label class="block text-xs font-bold text-purple-800 mb-1">Texto do 1º Botão</label>
-                                        <input name="linkTeste1_text" value="${i.linkTeste1_text || 'Ver programação de teste no MakeCode'}" placeholder="Ex: Programação no MakeCode" class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 font-medium" />
+                                        <input name="linkTeste1_text" value="${escapeHTML(i.linkTeste1_text || 'Ver programação de teste no MakeCode')}" placeholder="Ex: Programação no MakeCode" class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 font-medium" />
                                     </div>
                                     <div class="p-3 bg-white rounded-xl border border-purple-100">
                                         <label class="block text-xs font-bold text-purple-800 mb-1">2º Link de Teste (URL)</label>
-                                        <input name="linkTeste2_url" value="${i.linkTeste2_url || ''}" placeholder="Ex: https://..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 mb-2 font-medium" />
+                                        <input name="linkTeste2_url" value="${escapeHTML(i.linkTeste2_url) || ''}" placeholder="Ex: https://..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 mb-2 font-medium" />
                                         <label class="block text-xs font-bold text-purple-800 mb-1">Texto do 2º Botão</label>
-                                        <input name="linkTeste2_text" value="${i.linkTeste2_text || 'Programação de Teste Alternativa'}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 font-medium" />
+                                        <input name="linkTeste2_text" value="${escapeHTML(i.linkTeste2_text || 'Programação de Teste Alternativa')}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 font-medium" />
                                     </div>
                                     <div class="p-3 bg-white rounded-xl border border-purple-100 sm:col-span-2">
                                         <label class="block text-xs font-bold text-purple-800 mb-1">3º Link de Teste (URL)</label>
-                                        <input name="linkTeste3_url" value="${i.linkTeste3_url || ''}" placeholder="Ex: https://..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 mb-2 font-medium" />
+                                        <input name="linkTeste3_url" value="${escapeHTML(i.linkTeste3_url) || ''}" placeholder="Ex: https://..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 mb-2 font-medium" />
                                         <label class="block text-xs font-bold text-purple-800 mb-1">Texto do 3º Botão</label>
-                                        <input name="linkTeste3_text" value="${i.linkTeste3_text || 'Código de Teste Adicional'}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 font-medium" />
+                                        <input name="linkTeste3_text" value="${escapeHTML(i.linkTeste3_text || 'Código de Teste Adicional')}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 font-medium" />
                                     </div>
                                 </div>
                             </div>
@@ -1136,21 +1154,21 @@
                                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                     <div class="p-3 bg-white rounded-xl border border-blue-100">
                                         <label class="block text-xs font-bold text-blue-800 mb-1">Link Auxiliar 1 (URL)</label>
-                                        <input name="linkAux1_url" value="${i.linkAux1_url || ''}" placeholder="https://..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 mb-2 font-medium" />
+                                        <input name="linkAux1_url" value="${escapeHTML(i.linkAux1_url) || ''}" placeholder="https://..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 mb-2 font-medium" />
                                         <label class="block text-xs font-bold text-blue-800 mb-1">Texto do Botão 1</label>
-                                        <input name="linkAux1_text" value="${i.linkAux1_text || 'Baixar Datasheet Técnico PDF'}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 font-medium" />
+                                        <input name="linkAux1_text" value="${escapeHTML(i.linkAux1_text || 'Baixar Datasheet Técnico PDF')}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 font-medium" />
                                     </div>
                                     <div class="p-3 bg-white rounded-xl border border-blue-100">
                                         <label class="block text-xs font-bold text-blue-800 mb-1">Link Auxiliar 2 (URL)</label>
-                                        <input name="linkAux2_url" value="${i.linkAux2_url || ''}" placeholder="https://..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 mb-2 font-medium" />
+                                        <input name="linkAux2_url" value="${escapeHTML(i.linkAux2_url) || ''}" placeholder="https://..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 mb-2 font-medium" />
                                         <label class="block text-xs font-bold text-blue-800 mb-1">Texto do Botão 2</label>
-                                        <input name="linkAux2_text" value="${i.linkAux2_text || 'Manual de Instruções do Sensor'}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 font-medium" />
+                                        <input name="linkAux2_text" value="${escapeHTML(i.linkAux2_text || 'Manual de Instruções do Sensor')}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 font-medium" />
                                     </div>
                                     <div class="p-3 bg-white rounded-xl border border-blue-100">
                                         <label class="block text-xs font-bold text-blue-800 mb-1">Link Auxiliar 3 (URL)</label>
-                                        <input name="linkAux3_url" value="${i.linkAux3_url || ''}" placeholder="https://..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 mb-2 font-medium" />
+                                        <input name="linkAux3_url" value="${escapeHTML(i.linkAux3_url) || ''}" placeholder="https://..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 mb-2 font-medium" />
                                         <label class="block text-xs font-bold text-blue-800 mb-1">Texto do Botão 3</label>
-                                        <input name="linkAux3_text" value="${i.linkAux3_text || 'Esquema de Conexão Física'}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 font-medium" />
+                                        <input name="linkAux3_text" value="${escapeHTML(i.linkAux3_text || 'Esquema de Conexão Física')}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 font-medium" />
                                     </div>
                                 </div>
                             </div>
@@ -1185,7 +1203,7 @@
                         <div class="flex items-center gap-4 w-full md:w-auto flex-1">
                             <div class="relative w-full max-w-sm">
                                 <i data-lucide="search" class="absolute left-3 top-3 w-5 h-5 text-slate-400"></i>
-                                <input type="text" placeholder="Pesquisar por nome ou categoria..." value="${state.adminSearchQuery}" oninput="window.updateAdminSearch(this.value)" 
+                                <input type="text" placeholder="Pesquisar por nome ou categoria..." value="${escapeHTML(state.adminSearchQuery)}" oninput="window.updateAdminSearch(this.value)" 
                                     class="w-full pl-10 pr-4 py-3 border-2 border-slate-200 rounded-xl outline-none focus:border-red-500 focus:ring-4 focus:ring-red-100 font-medium text-slate-700 transition-all shadow-sm">
                             </div>
                             <button onclick="window.toggleAdminSort()" class="flex items-center px-4 py-3 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold text-slate-600 transition-colors whitespace-nowrap border-2 border-slate-200">
@@ -1217,16 +1235,16 @@
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div class="md:col-span-1">
                                     <label class="block text-sm font-bold text-slate-700 mb-2">Emoji da Categoria *</label>
-                                    <input name="emoji" value="${c.emoji || '🔧'}" required placeholder="Ex: 🛠️, 📡, 🔧" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700 text-center text-2xl" />
+                                    <input name="emoji" value="${escapeHTML(c.emoji) || '🔧'}" required placeholder="Ex: 🛠️, 📡, 🔧" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700 text-center text-2xl" />
                                 </div>
                                 <div class="md:col-span-2">
                                     <label class="block text-sm font-bold text-slate-700 mb-2">Nome da Categoria *</label>
-                                    <input name="nome" value="${c.nome || ''}" required placeholder="Ex: Atuadores" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700" />
+                                    <input name="nome" value="${escapeHTML(c.nome) || ''}" required placeholder="Ex: Atuadores" class="w-full border-2 border-slate-200 rounded-xl p-3 focus:border-blue-500 outline-none font-medium text-slate-700" />
                                 </div>
                                 <div class="md:col-span-3">
                                     <label class="block text-sm font-bold text-slate-700 mb-2">Cor de Destaque da Categoria *</label>
                                     <div class="flex items-center gap-4">
-                                        <input type="color" name="cor" value="${c.cor || '#3b82f6'}" class="w-16 h-12 border-2 border-slate-200 rounded-xl cursor-pointer" />
+                                        <input type="color" name="cor" value="${escapeHTML(c.cor) || '#3b82f6'}" class="w-16 h-12 border-2 border-slate-200 rounded-xl cursor-pointer" />
                                         <span class="text-sm font-semibold text-slate-500">Escolha a cor de destaque para os cartões e banners dessa categoria</span>
                                     </div>
                                 </div>
@@ -1261,17 +1279,17 @@
                                 <tbody>
                                     ${state.categorias.length > 0 ? state.categorias.map(c => `
                                         <tr class="border-b border-slate-100 hover:bg-purple-50/50 transition-colors">
-                                            <td class="p-4 text-2xl">${c.emoji}</td>
-                                            <td class="p-4 font-bold text-slate-700">${c.nome}</td>
+                                            <td class="p-4 text-2xl">${escapeHTML(c.emoji)}</td>
+                                            <td class="p-4 font-bold text-slate-700">${escapeHTML(c.nome)}</td>
                                             <td class="p-4">
                                                 <div class="flex items-center gap-2">
-                                                    <span class="w-6 h-6 rounded-full inline-block border shadow-sm" style="background-color: ${c.cor}"></span>
-                                                    <span class="font-mono text-xs text-slate-500 uppercase">${c.cor}</span>
+                                                    <span class="w-6 h-6 rounded-full inline-block border shadow-sm" style="background-color: ${escapeHTML(c.cor)}"></span>
+                                                    <span class="font-mono text-xs text-slate-500 uppercase">${escapeHTML(c.cor)}</span>
                                                 </div>
                                             </td>
                                             <td class="p-4 flex gap-2 justify-end">
-                                                <button onclick="window.editCategory('${c.id}')" class="p-2 bg-white border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-100 shadow-sm" title="Editar"><i data-lucide="edit" class="w-4 h-4"></i></button>
-                                                <button onclick="window.deleteCategory('${c.id}')" class="p-2 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-100 shadow-sm" title="Excluir"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                                                <button onclick="window.editCategory('${escapeHTML(c.id)}')" class="p-2 bg-white border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-100 shadow-sm" title="Editar"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                                                <button onclick="window.deleteCategory('${escapeHTML(c.id)}')" class="p-2 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-100 shadow-sm" title="Excluir"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                                             </td>
                                         </tr>
                                     `).join('') : `
@@ -1295,14 +1313,14 @@
                         <div class="space-y-4">
                             ${state.contatos.length > 0 ? state.contatos.map(c => `
                                 <div class="bg-slate-50 hover:bg-white border-2 border-slate-150 rounded-2xl p-6 relative transition-all shadow-sm">
-                                    <button onclick="window.deleteContato('${c.id}')" class="absolute top-4 right-4 text-slate-400 hover:text-red-600 p-1" title="Excluir Mensagem">
+                                    <button onclick="window.deleteContato('${escapeHTML(c.id)}')" class="absolute top-4 right-4 text-slate-400 hover:text-red-600 p-1" title="Excluir Mensagem">
                                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                                     </button>
                                     <div class="mb-3">
-                                        <p class="font-extrabold text-slate-800 text-base">${c.nome}</p>
-                                        <p class="text-sm font-bold text-slate-400">${c.email}</p>
+                                        <p class="font-extrabold text-slate-800 text-base">${escapeHTML(c.nome)}</p>
+                                        <p class="text-sm font-bold text-slate-400">${escapeHTML(c.email)}</p>
                                     </div>
-                                    <p class="text-slate-600 font-medium text-sm bg-white p-4 rounded-xl border border-slate-200/60">${c.mensagem}</p>
+                                    <p class="text-slate-600 font-medium text-sm bg-white p-4 rounded-xl border border-slate-200/60">${escapeHTML(c.mensagem)}</p>
                                     <div class="text-xs text-slate-400 font-bold mt-4">
                                         Recebido em: ${new Date(c.dataCriacao).toLocaleDateString('pt-BR')} às ${new Date(c.dataCriacao).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}
                                     </div>
@@ -1322,7 +1340,7 @@
                 <div class="flex justify-between items-center mb-8 bg-slate-800 text-white p-6 rounded-3xl shadow-lg no-print">
                     <div>
                         <h2 class="text-2xl font-extrabold flex items-center"><i data-lucide="shield" class="mr-2"></i> Painel de Controle</h2>
-                        <p class="text-slate-300 text-sm mt-1 font-medium">Logado como: ${state.user.email || 'Admin'}</p>
+                        <p class="text-slate-300 text-sm mt-1 font-medium">Logado como: ${escapeHTML(state.user.email || 'Admin')}</p>
                     </div>
                     <button onclick="window.adminLogout()" class="bg-slate-700 hover:bg-slate-600 p-3 rounded-xl transition-colors flex items-center font-bold text-sm">
                         <i data-lucide="log-out" class="w-4 h-4 mr-2"></i> Sair
@@ -1666,8 +1684,18 @@
             }
         };
 
+        // SEGURANÇA: Prevenção de injeção XSS e limitação de frequência (Anti-Spam Cooldown)
         window.submitNegativeFeedback = async (event) => {
             event.preventDefault();
+            
+            // Anti-Spam: 30s Cooldown
+            const lastFeedback = localStorage.getItem('lastFeedbackTime');
+            const now = Date.now();
+            if (lastFeedback && now - parseInt(lastFeedback) < 30000) {
+                window.customAlert("Aguarde", "Aguarde alguns segundos antes de enviar outra sugestão.", true);
+                return;
+            }
+
             const text = document.getElementById('feedback-text-input').value;
             const feedbackId = `feed_${Date.now()}`;
             const data = {
@@ -1675,28 +1703,41 @@
                 verbeteNome: state.selectedItem.nome,
                 util: false,
                 status: 'pendente',
-                feedbackText: text,
+                feedbackText: escapeHTML(text), // Sanitização XSS
                 dataCriacao: new Date().toISOString()
             };
+            
             if (db) {
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'feedbacks', feedbackId), data);
             } else {
                 state.feedbacks.push({ id: feedbackId, ...data });
             }
+
+            localStorage.setItem('lastFeedbackTime', now.toString());
             state.hasVotedCurrentItem = true;
             state.showFeedbackInput = false;
             renderItem();
         };
 
+        // SEGURANÇA: Prevenção de injeção XSS e limitação de frequência (Anti-Spam Cooldown)
         window.submitContactForm = async (event) => {
             event.preventDefault();
+
+            // Anti-Spam: 60s Cooldown
+            const lastSent = localStorage.getItem('lastContactTime');
+            const now = Date.now();
+            if (lastSent && now - parseInt(lastSent) < 60000) {
+                window.customAlert("Aguarde um momento", "Você já enviou uma mensagem recentemente. Aguarde 1 minuto para enviar outra.", true);
+                return;
+            }
+
             const form = event.target;
             const fd = new FormData(form);
             const contatoId = `contact_${Date.now()}`;
             const data = {
-                nome: fd.get('nome'),
-                email: fd.get('email'),
-                mensagem: fd.get('mensagem'),
+                nome: escapeHTML(fd.get('nome')),       // Sanitização XSS
+                email: escapeHTML(fd.get('email')),     // Sanitização XSS
+                mensagem: escapeHTML(fd.get('mensagem')), // Sanitização XSS
                 dataCriacao: new Date().toISOString()
             };
             try {
@@ -1705,6 +1746,8 @@
                 } else {
                     state.contatos.push({ id: contatoId, ...data });
                 }
+                
+                localStorage.setItem('lastContactTime', now.toString());
                 document.getElementById('contact-success-msg').classList.remove('hidden');
                 form.reset();
                 setTimeout(() => {
@@ -1812,27 +1855,27 @@
             const fd = new FormData(event.target);
             
             const data = {
-                nome: fd.get('nome'),
-                categoria: fd.get('categoria'),
-                descricao: fd.get('descricao'),
+                nome: escapeHTML(fd.get('nome')),
+                categoria: escapeHTML(fd.get('categoria')),
+                descricao: escapeHTML(fd.get('descricao')),
                 temNoKit: fd.get('temNoKit') === 'on',
-                exemploUso: fd.get('exemploUso'),
-                imagemOuVideo: fd.get('imagemOuVideo'),
-                midia2: fd.get('midia2') || '',
-                midia3: fd.get('midia3') || '',
-                midia4: fd.get('midia4') || '',
-                linkTeste1_url: fd.get('linkTeste1_url') || '',
-                linkTeste1_text: fd.get('linkTeste1_text') || '',
-                linkTeste2_url: fd.get('linkTeste2_url') || '',
-                linkTeste2_text: fd.get('linkTeste2_text') || '',
-                linkTeste3_url: fd.get('linkTeste3_url') || '',
-                linkTeste3_text: fd.get('linkTeste3_text') || '',
-                linkAux1_url: fd.get('linkAux1_url') || '',
-                linkAux1_text: fd.get('linkAux1_text') || '',
-                linkAux2_url: fd.get('linkAux2_url') || '',
-                linkAux2_text: fd.get('linkAux2_text') || '',
-                linkAux3_url: fd.get('linkAux3_url') || '',
-                linkAux3_text: fd.get('linkAux3_text') || '',
+                exemploUso: escapeHTML(fd.get('exemploUso')),
+                imagemOuVideo: escapeHTML(fd.get('imagemOuVideo')),
+                midia2: escapeHTML(fd.get('midia2')) || '',
+                midia3: escapeHTML(fd.get('midia3')) || '',
+                midia4: escapeHTML(fd.get('midia4')) || '',
+                linkTeste1_url: escapeHTML(fd.get('linkTeste1_url')) || '',
+                linkTeste1_text: escapeHTML(fd.get('linkTeste1_text')) || '',
+                linkTeste2_url: escapeHTML(fd.get('linkTeste2_url')) || '',
+                linkTeste2_text: escapeHTML(fd.get('linkTeste2_text')) || '',
+                linkTeste3_url: escapeHTML(fd.get('linkTeste3_url')) || '',
+                linkTeste3_text: escapeHTML(fd.get('linkTeste3_text')) || '',
+                linkAux1_url: escapeHTML(fd.get('linkAux1_url')) || '',
+                linkAux1_text: escapeHTML(fd.get('linkAux1_text')) || '',
+                linkAux2_url: escapeHTML(fd.get('linkAux2_url')) || '',
+                linkAux2_text: escapeHTML(fd.get('linkAux2_text')) || '',
+                linkAux3_url: escapeHTML(fd.get('linkAux3_url')) || '',
+                linkAux3_text: escapeHTML(fd.get('linkAux3_text')) || '',
                 habilitarRelacionados: fd.get('habilitarRelacionados') === 'on',
                 relacionados: fd.getAll('relacionados') || [],
                 dataCriacao: state.editingItem.dataCriacao || new Date().toISOString(),
@@ -1884,9 +1927,9 @@
             event.preventDefault();
             const fd = new FormData(event.target);
             const data = {
-                emoji: fd.get('emoji'),
-                nome: fd.get('nome'),
-                cor: fd.get('cor'),
+                emoji: escapeHTML(fd.get('emoji')),
+                nome: escapeHTML(fd.get('nome')),
+                cor: escapeHTML(fd.get('cor')),
                 dataCriacao: state.editingCategory.dataCriacao || new Date().toISOString()
             };
             const id = state.editingCategory.id || `cat_${Date.now()}`;
