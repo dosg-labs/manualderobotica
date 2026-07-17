@@ -297,7 +297,7 @@
             db = getFirestore(app);
 
             // Inicialização condicional do App Check para produção (fora do localhost)
-            const recaptchaKey = 'SUA_CHAVE_SITE_RECAPTCHA_V3';
+            const recaptchaKey = '6LdQjVgtAAAAABP50E2hTekh63UawlGs15Dc43kD';
             if (recaptchaKey && recaptchaKey !== 'SUA_CHAVE_SITE_RECAPTCHA_V3' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
                 initializeAppCheck(app, {
                     provider: new ReCaptchaV3Provider(recaptchaKey),
