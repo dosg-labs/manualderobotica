@@ -31,7 +31,8 @@
             "imports": {
                 "firebase/app": "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js",
                 "firebase/auth": "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js",
-                "firebase/firestore": "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js",
+                "firebase/app-check": "https://www.gstatic.com/firebasejs/11.6.1/firebase-app-check.js"
             }
         }
     </script>
@@ -92,7 +93,6 @@
                     <button onclick="window.navigateTo('home')" class="nav-btn font-extrabold text-sm px-4 py-2 rounded-xl transition-all duration-300 text-red-600 bg-red-50" data-target="home">Início</button>
                     <button onclick="window.navigateTo('glossary')" class="nav-btn font-extrabold text-sm px-4 py-2 rounded-xl transition-all duration-300 text-slate-600 hover:text-red-600 hover:bg-slate-50" data-target="glossary">Glossário</button>
                     
-                    <!-- Link Fantasma: Projetos (Desenvolvimento Futuro) -->
                     <button onclick="javascript:void(0)" class="nav-btn font-extrabold text-sm px-4 py-2 rounded-xl text-slate-400 cursor-not-allowed flex items-center gap-1.5" title="Em breve">
                         Projetos
                         <span class="text-[9px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide">Breve</span>
@@ -138,7 +138,7 @@
         <div id="view-admin" class="view-container max-w-6xl mx-auto px-4 py-8 fade-in view-hidden"></div>
     </main>
 
-    <!-- FOOTER - CRÉDITOS E DIRETRIZES -->
+    <!-- FOOTER -->
     <footer class="bg-slate-900 text-slate-300 py-10 mt-auto no-print border-t-[6px] border-red-600">
         <div class="max-w-5xl mx-auto px-4 flex flex-col md:flex-row items-center justify-center gap-6">
             <div class="flex-shrink-0 hover:scale-105 transition-transform duration-300">
@@ -155,7 +155,7 @@
         </div>
     </footer>
 
-    <!-- DIÁLOGOS DA APLICAÇÃO -->
+    <!-- MODAL CONFIRM -->
     <div id="confirm-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden no-print">
         <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border-2 border-slate-100 transform scale-95 transition-all duration-200">
             <div class="flex items-center text-red-600 mb-4">
@@ -172,6 +172,7 @@
         </div>
     </div>
 
+    <!-- MODAL AVISO -->
     <div id="message-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden no-print">
         <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border-2 border-slate-100 transform scale-95 transition-all duration-200">
             <div class="flex items-center text-blue-600 mb-4" id="message-modal-header">
@@ -187,6 +188,7 @@
         </div>
     </div>
 
+    <!-- MODAL LOGIN -->
     <div id="login-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden no-print">
         <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl border-2 border-slate-100 text-center transform scale-95 transition-all duration-200">
             <div class="bg-purple-100 p-3 rounded-full w-14 h-14 flex items-center justify-center mx-auto mb-4 text-purple-600">
@@ -201,15 +203,13 @@
         </div>
     </div>
 
-    <!-- Lightbox de Ampliação de Mídia -->
+    <!-- LIGHTBOX -->
     <div id="lightbox-modal" class="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/95 backdrop-blur-md hidden no-print" onclick="window.closeLightbox()">
         <button class="absolute top-6 right-6 text-slate-300 hover:text-white transition transform hover:scale-110" title="Fechar"><i data-lucide="x" class="w-10 h-10"></i></button>
-        <div id="lightbox-content" class="w-full max-w-5xl max-h-[90vh] p-4 flex justify-center items-center pointer-events-auto" onclick="event.stopPropagation()">
-            <!-- Conteúdo Injetado via JS -->
-        </div>
+        <div id="lightbox-content" class="w-full max-w-5xl max-h-[90vh] p-4 flex justify-center items-center pointer-events-auto" onclick="event.stopPropagation()"></div>
     </div>
 
-    <!-- LÓGICA DA APLICAÇÃO -->
+    <!-- LÓGICA DO SISTEMA -->
     <script type="module">
         import { initializeApp } from 'firebase/app';
         import { 
@@ -219,33 +219,7 @@
         import { 
             getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, increment, getDoc
         } from 'firebase/firestore';
-
-        // ==========================================
-        // LISTA DE E-MAILS AUTORIZADOS (FRONTEND)
-        // ==========================================
-        const ALLOWED_EMAILS = [
-            'diego.gatto@servidor.educacao.sp.gov.br',
-            'paulo.gumiero@servidor.educacao.sp.gov.br',
-            'roberto.rocha01@servidor.educacao.sp.gov.br',
-            'rodrigo.ferreira02@servidor.educacao.sp.gov.br',
-            'mariangela.rocha@servidor.educacao.sp.gov.br'
-        ];
-
-        // ==========================================
-        // SEGURANÇA: SANITIZAÇÃO DE ENTRADAS (ANTI-XSS)
-        // ==========================================
-        const escapeHTML = (str) => {
-            if (typeof str !== 'string') return str;
-            return str.replace(/[&<>'"]/g, 
-                tag => ({
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    "'": '&#39;',
-                    '"': '&quot;'
-                }[tag] || tag)
-            );
-        };
+        import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 
         // ==========================================
         // ESTADO GLOBAL DA APLICAÇÃO
@@ -274,7 +248,21 @@
         };
 
         // ==========================================
-        // CONFIGURAÇÃO DO AMBIENTE FIREBASE (SEM OBSTRUIÇÕES)
+        // SANITIZADOR DE OUTPUT (PROTEÇÃO XSS)
+        // ==========================================
+        const escapeHTML = (str) => {
+            if (typeof str !== 'string') return str;
+            return str.replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;'
+            }[tag] || tag));
+        };
+
+        // ==========================================
+        // CONFIGURAÇÃO DO AMBIENTE FIREBASE
         // ==========================================
         const productionConfig = {
             apiKey: "AIzaSyBDX50c8G6tfx8zwdDgm5ZZGaiR1Cef2hs",
@@ -288,9 +276,8 @@
 
         let app, auth, db;
         
-        // CORREÇÃO CRÍTICA DE SEGURANÇA/PERMISSÃO DO FIRESTORE:
-        // Se o __app_id contiver barras '/' (comum em sandboxes), removemos para virar um único segmento válido nas regras
-        const rawAppId = typeof __app_id !== 'undefined' ? __app_id : 'robotica-app';
+        // Sanitiza o App ID substituindo eventuais barras estruturais por underscores para o Firestore
+        let rawAppId = typeof __app_id !== 'undefined' ? __app_id : 'robotica-app';
         const appId = rawAppId.replace(/\//g, '_');
         
         const rawConfig = typeof __firebase_config !== 'undefined' ? __firebase_config : '{}';
@@ -299,7 +286,7 @@
         try {
             parsedConfig = JSON.parse(rawConfig);
         } catch (e) {
-            console.warn("Configuração do Firebase inválida ou ausente.");
+            console.warn("Configuração externa ausente ou corrompida.");
         }
 
         const finalFirebaseConfig = (parsedConfig && parsedConfig.apiKey) ? parsedConfig : productionConfig;
@@ -308,6 +295,15 @@
             app = initializeApp(finalFirebaseConfig);
             auth = getAuth(app);
             db = getFirestore(app);
+
+            // Inicialização condicional do App Check para produção (fora do localhost)
+            const recaptchaKey = 'SUA_CHAVE_SITE_RECAPTCHA_V3';
+            if (recaptchaKey && recaptchaKey !== 'SUA_CHAVE_SITE_RECAPTCHA_V3' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+                initializeAppCheck(app, {
+                    provider: new ReCaptchaV3Provider(recaptchaKey),
+                    isTokenAutoRefreshEnabled: true
+                });
+            }
         } catch (err) {
             console.error("Falha ao inicializar o SDK do Firebase:", err);
         }
@@ -360,7 +356,6 @@
         window.showLoginModal = () => document.getElementById('login-modal').classList.remove('hidden');
         window.hideLoginModal = () => document.getElementById('login-modal').classList.add('hidden');
 
-        // Tratamento de IDs de Mídia do YouTube
         window.getYoutubeId = (url) => {
             if (!url) return '';
             const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts|live)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
@@ -468,7 +463,7 @@
                     <div class="bg-white p-8 rounded-3xl shadow-sm border-b-4 border-slate-200 text-center flex flex-col justify-center items-center hover:-translate-y-1 transition-transform">
                         <div class="text-5xl mb-3">🚀</div>
                         <div class="text-4xl font-black text-slate-800 mb-1">${state.verbetes.length}</div>
-                        <div class="text-sm font-bold text-slate-400 uppercase tracking-wide">Verbetes (e crescendo)</div>
+                        <div class="text-sm font-bold text-slate-400 uppercase tracking-wide">Verbetes</div>
                     </div>
                     
                     <div class="bg-white p-8 rounded-3xl shadow-sm border-b-4 border-slate-200 text-center flex flex-col justify-center items-center hover:-translate-y-1 transition-transform">
@@ -685,10 +680,10 @@
                 
                 if (item.imagemOuVideo) {
                     if (isVideo) {
-                        const embedUrl = ytId ? `https://www.youtube.com/embed/${escapeHTML(ytId)}` : escapeHTML(item.imagemOuVideo);
+                        const embedUrl = ytId ? `https://www.youtube.com/embed/${ytId}` : item.imagemOuVideo;
                         mediaHTML += `
                             <div class="w-full aspect-video rounded-3xl overflow-hidden bg-black flex flex-col items-center justify-center relative shadow-md mb-4 border border-slate-100">
-                                <iframe class="w-full h-full" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                                <iframe class="w-full h-full" src="${escapeHTML(embedUrl)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                             </div>
                         `;
                     } else {
@@ -710,12 +705,12 @@
                         const isVid = !!sYtId || m.match(/\.(mp4|webm|ogg)$/i);
 
                         if (isVid) {
-                            const embedUrl = sYtId ? `https://www.youtube.com/embed/${escapeHTML(sYtId)}` : escapeHTML(m);
-                            const thumbUrl = sYtId ? `https://img.youtube.com/vi/${escapeHTML(sYtId)}/0.jpg` : 'https://via.placeholder.com/300x200?text=Video';
+                            const embedUrl = sYtId ? `https://www.youtube.com/embed/${sYtId}` : m;
+                            const thumbUrl = sYtId ? `https://img.youtube.com/vi/${sYtId}/0.jpg` : 'https://via.placeholder.com/300x200?text=Video';
                             mediaHTML += `
-                                <div class="aspect-video w-full bg-slate-900 rounded-2xl flex items-center justify-center cursor-pointer hover:opacity-90 hover:scale-[1.02] transition duration-300 relative shadow-sm border-2 border-slate-100 overflow-hidden" onclick="window.openLightbox('${embedUrl}', true)" title="Assistir Vídeo">
+                                <div class="aspect-video w-full bg-slate-900 rounded-2xl flex items-center justify-center cursor-pointer hover:opacity-90 hover:scale-[1.02] transition duration-300 relative shadow-sm border-2 border-slate-100 overflow-hidden" onclick="window.openLightbox('${escapeHTML(embedUrl)}', true)" title="Assistir Vídeo">
                                     <i data-lucide="play-circle" class="text-white w-10 h-10 absolute z-10 drop-shadow-lg"></i>
-                                    <img src="${thumbUrl}" class="w-full h-full object-cover opacity-70" onerror="this.style.display='none'"/>
+                                    <img src="${escapeHTML(thumbUrl)}" class="w-full h-full object-cover opacity-70" onerror="this.style.display='none'"/>
                                 </div>`;
                         } else {
                             mediaHTML += `
@@ -810,7 +805,7 @@
                                 <p class="text-lg text-slate-600 font-medium leading-relaxed bg-green-50/50 border-2 border-green-100 p-6 rounded-2xl">${escapeHTML(item.exemploUso)}</p>
                             </section>` : ''}
 
-                            <!-- REQUISITO 1: LINKS DE PROGRAMAÇÃO TESTE COM TEXTO EDITÁVEL -->
+                            <!-- LINKS DE PROGRAMAÇÃO TESTE -->
                             ${[
                                 { url: item.linkTeste1_url || item.linkMakeCode, text: item.linkTeste1_text || 'Ver programação de teste no MakeCode' },
                                 { url: item.linkTeste2_url, text: item.linkTeste2_text || 'Programação de Teste Alternativa' },
@@ -834,7 +829,7 @@
                             </section>
                             ` : ''}
 
-                            <!-- OUTROS LINKS ADICIONAIS / DATASHEETS -->
+                            <!-- OUTROS LINKS ADICIONAIS -->
                             ${(item.linkAux1_url || item.linkAux2_url || item.linkAux3_url) ? `
                             <section class="print-break-inside-avoid">
                                 <h3 class="text-xl font-extrabold text-slate-700 mb-3 flex items-center">
@@ -855,19 +850,19 @@
                             </section>
                             ` : ''}
 
-                            <!-- ABA DE UTILIDADE / FEEDBACK -->
+                            <!-- FEEDBACK -->
                             <section class="print-break-inside-avoid no-print pt-4">
                                 ${feedbackWidgetHTML}
                             </section>
 
-                            <!-- BOTÃO DE IMPRESSÃO -->
+                            <!-- IMPRESSÃO -->
                             <section class="print-break-inside-avoid no-print pt-2">
                                 <button onclick="window.print()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 p-4 rounded-2xl font-bold text-center flex justify-center items-center shadow-sm transform hover:-translate-y-0.5 transition-all border-2 border-slate-200">
                                     <i data-lucide="printer" class="w-5 h-5 mr-2"></i> Imprimir Verbete
                                 </button>
                             </section>
 
-                            <!-- VEJA TAMBÉM (RELACIONADOS) -->
+                            <!-- VEJA TAMBÉM -->
                             ${(item.habilitarRelacionados && item.relacionados && item.relacionados.length > 0) ? `
                             <section class="print-break-inside-avoid pt-8 mt-8 border-t-2 border-slate-100">
                                 <h3 class="text-2xl font-extrabold text-slate-800 mb-6 flex items-center">
@@ -954,7 +949,7 @@
                                 <div class="pr-8">
                                     <span class="inline-block ${badgeColor} text-xs font-bold px-2.5 py-1 rounded-full mb-2">${badgeLabel}</span>
                                     <p class="font-extrabold text-slate-800 text-base mb-1">Item: ${escapeHTML(f.verbeteNome)}</p>
-                                    <p class="text-slate-600 font-medium italic mb-2">"${escapeHTML(f.feedbackText || 'Sem descrição.')}"</p>
+                                    <p class="text-slate-600 font-medium italic mb-2">"${escapeHTML(f.feedbackText) || 'Sem descrição.'}"</p>
                                     <span class="text-xs text-slate-400 font-bold block mt-1">ID: ${escapeHTML(f.id)}</span>
                                 </div>
                                 ${actionButtons}
@@ -1045,7 +1040,7 @@
                     </div>
                 `;
 
-            // ABA: VERBETES (FORMULÁRIO DE EDIÇÃO E CRIAÇÃO)
+            // ABA: VERBETES
             } else if (state.activeAdminTab === 'verbetes' && state.editingItem) {
                 const i = state.editingItem;
                 const catOptions = state.categorias.map(c => `<option value="${escapeHTML(c.nome)}" ${c.nome === i.categoria ? 'selected' : ''}>${escapeHTML(c.nome)}</option>`).join('');
@@ -1121,54 +1116,52 @@
                                 <h4 class="text-sm font-extrabold text-purple-900 flex items-center">
                                     <i data-lucide="code" class="w-5 h-5 mr-2 text-purple-600"></i> Links de Programação e Testes (Até 3)
                                 </h4>
-                                <p class="text-xs text-purple-700 font-medium">Cadastre links de teste (MakeCode, repositórios, etc.) e configure o text dos botões de ação.</p>
                                 
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div class="p-3 bg-white rounded-xl border border-purple-100">
                                         <label class="block text-xs font-bold text-purple-800 mb-1">1º Link de Teste (URL)</label>
                                         <input name="linkTeste1_url" value="${escapeHTML(i.linkTeste1_url || i.linkMakeCode) || ''}" placeholder="Ex: https://makecode..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 mb-2 font-medium" />
                                         <label class="block text-xs font-bold text-purple-800 mb-1">Texto do 1º Botão</label>
-                                        <input name="linkTeste1_text" value="${escapeHTML(i.linkTeste1_text || 'Ver programação de teste no MakeCode')}" placeholder="Ex: Programação no MakeCode" class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 font-medium" />
+                                        <input name="linkTeste1_text" value="${escapeHTML(i.linkTeste1_text) || 'Ver programação de teste no MakeCode'}" placeholder="Ex: Programação no MakeCode" class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 font-medium" />
                                     </div>
                                     <div class="p-3 bg-white rounded-xl border border-purple-100">
                                         <label class="block text-xs font-bold text-purple-800 mb-1">2º Link de Teste (URL)</label>
                                         <input name="linkTeste2_url" value="${escapeHTML(i.linkTeste2_url) || ''}" placeholder="Ex: https://..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 mb-2 font-medium" />
                                         <label class="block text-xs font-bold text-purple-800 mb-1">Texto do 2º Botão</label>
-                                        <input name="linkTeste2_text" value="${escapeHTML(i.linkTeste2_text || 'Programação de Teste Alternativa')}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 font-medium" />
+                                        <input name="linkTeste2_text" value="${escapeHTML(i.linkTeste2_text) || 'Programação de Teste Alternativa'}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 font-medium" />
                                     </div>
                                     <div class="p-3 bg-white rounded-xl border border-purple-100 sm:col-span-2">
                                         <label class="block text-xs font-bold text-purple-800 mb-1">3º Link de Teste (URL)</label>
                                         <input name="linkTeste3_url" value="${escapeHTML(i.linkTeste3_url) || ''}" placeholder="Ex: https://..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 mb-2 font-medium" />
                                         <label class="block text-xs font-bold text-purple-800 mb-1">Texto do 3º Botão</label>
-                                        <input name="linkTeste3_text" value="${escapeHTML(i.linkTeste3_text || 'Código de Teste Adicional')}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 font-medium" />
+                                        <input name="linkTeste3_text" value="${escapeHTML(i.linkTeste3_text) || 'Código de Teste Adicional'}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-sm outline-none focus:border-purple-500 font-medium" />
                                     </div>
                                 </div>
                             </div>
 
                             <div class="md:col-span-2 bg-blue-50/50 p-5 rounded-2xl border-2 border-blue-200 space-y-4">
                                 <h4 class="text-sm font-extrabold text-blue-900 flex items-center">
-                                    <i data-lucide="file-text" class="w-5 h-5 mr-2 text-blue-600"></i> Outros Links Auxiliares (Datasheets, Manuais, etc. - Opcional)
+                                    <i data-lucide="file-text" class="w-5 h-5 mr-2 text-blue-600"></i> Outros Links Auxiliares (Datasheets, Manuais, etc.)
                                 </h4>
-                                <p class="text-xs text-blue-700 font-medium">Estes botões só ficarão visíveis se você preencher a URL de destino correspondente.</p>
                                 
                                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                     <div class="p-3 bg-white rounded-xl border border-blue-100">
                                         <label class="block text-xs font-bold text-blue-800 mb-1">Link Auxiliar 1 (URL)</label>
                                         <input name="linkAux1_url" value="${escapeHTML(i.linkAux1_url) || ''}" placeholder="https://..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 mb-2 font-medium" />
                                         <label class="block text-xs font-bold text-blue-800 mb-1">Texto do Botão 1</label>
-                                        <input name="linkAux1_text" value="${escapeHTML(i.linkAux1_text || 'Baixar Datasheet Técnico PDF')}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 font-medium" />
+                                        <input name="linkAux1_text" value="${escapeHTML(i.linkAux1_text) || 'Baixar Datasheet Técnico PDF'}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 font-medium" />
                                     </div>
                                     <div class="p-3 bg-white rounded-xl border border-blue-100">
                                         <label class="block text-xs font-bold text-blue-800 mb-1">Link Auxiliar 2 (URL)</label>
                                         <input name="linkAux2_url" value="${escapeHTML(i.linkAux2_url) || ''}" placeholder="https://..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 mb-2 font-medium" />
                                         <label class="block text-xs font-bold text-blue-800 mb-1">Texto do Botão 2</label>
-                                        <input name="linkAux2_text" value="${escapeHTML(i.linkAux2_text || 'Manual de Instruções do Sensor')}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 font-medium" />
+                                        <input name="linkAux2_text" value="${escapeHTML(i.linkAux2_text) || 'Manual de Instruções do Sensor'}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 font-medium" />
                                     </div>
                                     <div class="p-3 bg-white rounded-xl border border-blue-100">
                                         <label class="block text-xs font-bold text-blue-800 mb-1">Link Auxiliar 3 (URL)</label>
                                         <input name="linkAux3_url" value="${escapeHTML(i.linkAux3_url) || ''}" placeholder="https://..." class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 mb-2 font-medium" />
                                         <label class="block text-xs font-bold text-blue-800 mb-1">Texto do Botão 3</label>
-                                        <input name="linkAux3_text" value="${escapeHTML(i.linkAux3_text || 'Esquema de Conexão Física')}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 font-medium" />
+                                        <input name="linkAux3_text" value="${escapeHTML(i.linkAux3_text) || 'Esquema de Conexão Física'}" class="w-full border-2 border-slate-100 rounded-lg p-2 text-xs outline-none focus:border-blue-500 font-medium" />
                                     </div>
                                 </div>
                             </div>
@@ -1196,7 +1189,7 @@
                     </form>
                 `;
 
-            // ABA: LISTA PRINCIPAL DE VERBETES
+            // ABA: LISTA PRINCIPAL
             } else if (state.activeAdminTab === 'verbetes') {
                 mainContent = `
                     <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
@@ -1302,7 +1295,7 @@
                 }
             }
 
-            // ABA: CAIXA DE MENSAGENS FALE CONOSCO
+            // ABA: FALE CONOSCO
             else if (state.activeAdminTab === 'contatos') {
                 mainContent = `
                     <div class="p-4">
@@ -1426,6 +1419,8 @@
             const mtContRef = collection(db, 'artifacts', appId, 'public', 'data', 'contatos');
 
             try {
+                // Tentamos assinar coleções restritas. Se o e-mail não estiver na lista de regras no Firestore,
+                // a promessa falhará imediatamente disparando o erro de controle de acesso (Security Rules).
                 const unsubFeed = onSnapshot(feedRef, (snapshot) => {
                     state.feedbacks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     state.isAdmin = true;
@@ -1438,7 +1433,7 @@
                         renderView();
                     }
                 }, (err) => {
-                    console.warn("Acesso administrativo negado pelo Firebase Rules (feedbacks):", err);
+                    console.warn("Acesso administrativo negado pelo Firestore Rules (feedbacks):", err);
                     handleAdminPermissionDenied();
                 });
 
@@ -1446,7 +1441,7 @@
                     state.contatos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     renderView();
                 }, (err) => {
-                    console.warn("Acesso administrativo negado pelo Firebase Rules (contatos):", err);
+                    console.warn("Acesso administrativo negado pelo Firestore Rules (contatos):", err);
                     handleAdminPermissionDenied();
                 });
 
@@ -1462,6 +1457,7 @@
             
             state.isAdmin = false;
             signOut(auth);
+            window.customAlert("Acesso Negado", "Seu e-mail não possui privilégios de administrador ou a sessão expirou.", true);
             window.navigateTo('home');
         }
 
@@ -1572,17 +1568,9 @@
                     state.user = currentUser;
                     
                     if (currentUser && !currentUser.isAnonymous) {
-                        const email = currentUser.email ? currentUser.email.toLowerCase().trim() : '';
-                        
-                        // Validação Primária no Cliente (Frontend) - Checagem direta de e-mails
-                        if (ALLOWED_EMAILS.includes(email)) {
-                            setupAdminListeners();
-                        } else {
-                            state.isAdmin = false;
-                            await signOut(auth);
-                            window.customAlert("Acesso Negado", "Seu e-mail não possui privilégios de administrador.", true);
-                            window.navigateTo('home');
-                        }
+                        // Inicia as assinaturas de dados administrativos.
+                        // Caso as Security Rules bloqueiem, o handleAdminPermissionDenied() será chamado automaticamente.
+                        setupAdminListeners();
                     } else {
                         state.isAdmin = false;
                         adminUnsubscribers.forEach(unsub => unsub());
@@ -1684,11 +1672,10 @@
             }
         };
 
-        // SEGURANÇA: Prevenção de injeção XSS e limitação de frequência (Anti-Spam Cooldown)
         window.submitNegativeFeedback = async (event) => {
             event.preventDefault();
-            
-            // Anti-Spam: 30s Cooldown
+
+            // Proteção de Cooldown anti-spam (30s)
             const lastFeedback = localStorage.getItem('lastFeedbackTime');
             const now = Date.now();
             if (lastFeedback && now - parseInt(lastFeedback) < 30000) {
@@ -1703,31 +1690,28 @@
                 verbeteNome: state.selectedItem.nome,
                 util: false,
                 status: 'pendente',
-                feedbackText: escapeHTML(text), // Sanitização XSS
+                feedbackText: escapeHTML(text),
                 dataCriacao: new Date().toISOString()
             };
-            
             if (db) {
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'feedbacks', feedbackId), data);
             } else {
                 state.feedbacks.push({ id: feedbackId, ...data });
             }
-
             localStorage.setItem('lastFeedbackTime', now.toString());
             state.hasVotedCurrentItem = true;
             state.showFeedbackInput = false;
             renderItem();
         };
 
-        // SEGURANÇA: Prevenção de injeção XSS e limitação de frequência (Anti-Spam Cooldown)
         window.submitContactForm = async (event) => {
             event.preventDefault();
 
-            // Anti-Spam: 60s Cooldown
+            // Proteção de Cooldown anti-spam (60s)
             const lastSent = localStorage.getItem('lastContactTime');
             const now = Date.now();
             if (lastSent && now - parseInt(lastSent) < 60000) {
-                window.customAlert("Aguarde um momento", "Você já enviou uma mensagem recentemente. Aguarde 1 minuto para enviar outra.", true);
+                window.customAlert("Aguarde um momento", "Você já enviou uma mensagem recentemente. Por favor, aguarde 1 minuto para enviar outra.", true);
                 return;
             }
 
@@ -1735,9 +1719,9 @@
             const fd = new FormData(form);
             const contatoId = `contact_${Date.now()}`;
             const data = {
-                nome: escapeHTML(fd.get('nome')),       // Sanitização XSS
-                email: escapeHTML(fd.get('email')),     // Sanitização XSS
-                mensagem: escapeHTML(fd.get('mensagem')), // Sanitização XSS
+                nome: escapeHTML(fd.get('nome')),
+                email: escapeHTML(fd.get('email')),
+                mensagem: escapeHTML(fd.get('mensagem')),
                 dataCriacao: new Date().toISOString()
             };
             try {
@@ -1746,7 +1730,6 @@
                 } else {
                     state.contatos.push({ id: contatoId, ...data });
                 }
-                
                 localStorage.setItem('lastContactTime', now.toString());
                 document.getElementById('contact-success-msg').classList.remove('hidden');
                 form.reset();
